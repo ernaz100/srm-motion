@@ -5,6 +5,7 @@ Max Planck Institute for Informatics, Saarland Informatics Campus
 
 [![arXiv](https://img.shields.io/badge/arXiv-2403.16292-b31b1b.svg)]()
 [![Project Website](https://img.shields.io/badge/Website-Visit%20Here-006c66)](https://geometric-rl.mpi-inf.mpg.de/srm/)
+![srm_thumbnail](https://github.com/user-attachments/assets/23e0538d-8243-4aad-8041-524ff188a732)
 
 ## Contents
 - [🌐 Project Website](https://geometric-rl.mpi-inf.mpg.de/srm/)
