@@ -10,7 +10,7 @@ Max Planck Institute for Informatics, Saarland Informatics Campus
 - [🌐 Project Website](https://geometric-rl.mpi-inf.mpg.de/srm/)
 - [📓 Abstract](#-abstract)
 - [🛠️ Installation](#️-installation)
-- [💾 Datasets & Checkpoints](#-datasets-&-checkpoints)
+- [💾 Datasets & Checkpoints](#-datasets--checkpoints)
 - [📣 Usage](#-usage)
 - [📘 Citation](#-citation)
 
