@@ -1,0 +1,3 @@
+name: graph_sequential
+max_order: 1
+inference_overlap: 0.0

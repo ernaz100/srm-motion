@@ -1,0 +1,6 @@
+defaults:
+  - time_scheduler: random_seq
+
+name: manual
+max_steps: 1000
+alpha: 1.0

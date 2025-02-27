@@ -1,0 +1,3 @@
+defaults:
+  - ep
+  - /sampler@ep.samplers.seq_adaptive075: seq_adaptive075

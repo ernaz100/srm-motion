@@ -1,0 +1,7 @@
+defaults:
+  - /sampler@ep.samplers.seq_adaptive090: seq_adaptive
+
+ep:
+  samplers:
+    seq_adaptive090:
+      overlap: 0.90

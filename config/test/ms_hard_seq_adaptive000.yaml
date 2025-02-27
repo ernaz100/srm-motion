@@ -1,0 +1,3 @@
+defaults:
+  - ms_hard
+  - /sampler@hard.samplers.seq_adaptive000: seq_adaptive

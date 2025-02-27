@@ -1,0 +1,7 @@
+# @package _global_
+
+defaults:
+  - ep
+  - override /model/time_sampler: shared
+
+patch_size: null

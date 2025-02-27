@@ -1,0 +1,3 @@
+defaults:
+  - cp
+  - /sampler@cp.samplers.random_seq075: random_seq075

@@ -1,0 +1,5 @@
+ep:
+  name: even_pixels
+  num_samples: 500
+  save_samples: false
+  sampling_video: false

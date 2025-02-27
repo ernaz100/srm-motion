@@ -1,0 +1,8 @@
+defaults:
+  - ms_hard
+  - /sampler@hard.samplers.graph_seq000_ddim: graph_seq
+
+hard:
+  samplers:
+    graph_seq000_ddim:
+      alpha: 0.0

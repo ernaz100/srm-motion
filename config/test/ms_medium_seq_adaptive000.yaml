@@ -1,0 +1,3 @@
+defaults:
+  - ms_medium
+  - /sampler@medium.samplers.seq_adaptive000: seq_adaptive

@@ -1,0 +1,5 @@
+# @package _global_
+
+defaults:
+  - ms1000_28
+  - override /model/time_sampler: independent

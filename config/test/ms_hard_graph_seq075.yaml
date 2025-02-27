@@ -1,0 +1,3 @@
+defaults:
+  - ms_hard
+  - /sampler@hard.samplers.graph_seq075: graph_seq075

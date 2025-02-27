@@ -1,0 +1,6 @@
+medium:
+  name: mnist_sudoku
+  num_fill: [27, 53]
+  num_samples: 500
+  save_samples: false
+  sampling_video: false

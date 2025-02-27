@@ -1,0 +1,8 @@
+defaults:
+  - ms_hard
+  - /sampler@hard.samplers.seq_adaptive075_ddim: seq_adaptive075
+
+hard:
+  samplers:
+    seq_adaptive075_ddim:
+      alpha: 0.0

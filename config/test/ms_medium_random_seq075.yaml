@@ -1,0 +1,3 @@
+defaults:
+  - ms_medium
+  - /sampler@medium.samplers.random_seq075: random_seq075

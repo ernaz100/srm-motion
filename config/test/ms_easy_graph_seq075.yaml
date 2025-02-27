@@ -1,0 +1,4 @@
+defaults:
+  - ms_easy
+  - /sampler@easy.samplers.graph_seq075: graph_seq075
+

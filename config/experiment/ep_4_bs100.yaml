@@ -1,0 +1,8 @@
+# @package _global_
+
+defaults:
+  - ep_4
+
+model:
+  time_sampler:
+    beta_sharpness: 1.00

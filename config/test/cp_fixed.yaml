@@ -1,0 +1,3 @@
+defaults:
+  - cp
+  - /sampler@cp.samplers.fixed: fixed

@@ -1,0 +1,6 @@
+hard:
+  name: mnist_sudoku
+  num_fill: [0, 26]
+  num_samples: 500
+  save_samples: false
+  sampling_video: false

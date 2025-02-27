@@ -1,0 +1,4 @@
+defaults:
+  - seq_adaptive
+
+overlap: 0.75

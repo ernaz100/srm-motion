@@ -1,0 +1,16 @@
+av
+beartype
+colorama
+dacite
+einops
+gdown
+hydra-core
+jaxtyping
+lightning
+matplotlib
+pandas
+torch
+torchaudio
+torchvision
+wandb
+wandb[media]

@@ -1,0 +1,3 @@
+name: sequential_adaptive
+top_k: 1
+overlap: 0.0

@@ -1,0 +1,9 @@
+defaults:
+  - ep
+  - /sampler@ep.samplers.random_seq095: random_seq
+
+ep:
+  samplers:
+    random_seq095:
+      time_scheduler:
+        inference_overlap: 0.95

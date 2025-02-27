@@ -1,0 +1,5 @@
+defaults:
+  - random_seq
+
+time_scheduler:
+  inference_overlap: 0.75
