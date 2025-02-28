@@ -1,5 +1,5 @@
 # Spatial Reasoning with Denoising Models
-<a href="https://geometric-rl.mpi-inf.mpg.de/people/Wewer.html">Christopher Wewer</a>, <a href="https://geometric-rl.mpi-inf.mpg.de/people/Bart.html">Bartlomiej Pogodzinski</a>, <a href="https://www.mpi-inf.mpg.de/departments/computer-vision-and-machine-learning/people/bernt-schiele">Bernt Schiele</a>, <a href="http://geometric-rl.mpi-inf.mpg.de/people/Lenssen.html">Jan Eric Lenssen</a>
+<a href="https://geometric-rl.mpi-inf.mpg.de/people/Wewer.html">Christopher Wewer</a>, <a href="https://geometric-rl.mpi-inf.mpg.de/people/Bart.html">Bart Pogodzinski</a>, <a href="https://www.mpi-inf.mpg.de/departments/computer-vision-and-machine-learning/people/bernt-schiele">Bernt Schiele</a>, <a href="http://geometric-rl.mpi-inf.mpg.de/people/Lenssen.html">Jan Eric Lenssen</a>
 
 Max Planck Institute for Informatics, Saarland Informatics Campus
 
