@@ -7,6 +7,10 @@ Max Planck Institute for Informatics, Saarland Informatics Campus
 [![Project Website](https://img.shields.io/badge/Website-Visit%20Here-006c66)](https://geometric-rl.mpi-inf.mpg.de/srm/)
 ![srm_thumbnail](https://github.com/user-attachments/assets/23e0538d-8243-4aad-8041-524ff188a732)
 
+## 📣 News
+- [25-03-03] 🚀 Code is available on GitHub. Note that this is a minimal code example to reproduce paper results. We plan to release a comprehensive toolbox for our framework soon. Stay tuned!
+- [25-03-03] 👀 Release of [arXiv](https://arxiv.org/abs/2410.23168) paper and [project website](https://geometric-rl.mpi-inf.mpg.de/srm/).
+
 ## Contents
 - [🌐 Project Website](https://geometric-rl.mpi-inf.mpg.de/srm/)
 - [📓 Abstract](#-abstract)
