@@ -1,4 +1,4 @@
-# Spatial Reasoning with Denoising Models
+# Spatial Reasoning with Denoising Models [ICML 2025]
 <a href="https://geometric-rl.mpi-inf.mpg.de/people/Wewer.html">Christopher Wewer</a>, <a href="https://geometric-rl.mpi-inf.mpg.de/people/Bart.html">Bart Pogodzinski</a>, <a href="https://www.mpi-inf.mpg.de/departments/computer-vision-and-machine-learning/people/bernt-schiele">Bernt Schiele</a>, <a href="http://geometric-rl.mpi-inf.mpg.de/people/Lenssen.html">Jan Eric Lenssen</a>
 
 Max Planck Institute for Informatics, Saarland Informatics Campus
@@ -8,6 +8,7 @@ Max Planck Institute for Informatics, Saarland Informatics Campus
 ![srm_thumbnail](https://github.com/user-attachments/assets/23e0538d-8243-4aad-8041-524ff188a732)
 
 ## 📣 News
+- [25-05-01] 🎉 **Spatial Reasoning with Denoising Models** is accepted at [ICML 2025](https://icml.cc/Conferences/2025)! Meet us at our poster! 😁
 - [25-03-03] 🚀 Code is available on GitHub. Note that this is a minimal code example to reproduce paper results. We plan to release a comprehensive toolbox for our framework soon. Stay tuned!
 - [25-03-03] 👀 Release of [arXiv](https://arxiv.org/abs/2502.21075) paper and [project website](https://geometric-rl.mpi-inf.mpg.de/srm/).
 
