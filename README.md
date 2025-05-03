@@ -84,7 +84,7 @@ When using this code in your project, consider citing our work as follows:
     <pre><code>@inproceedings{wewer25srm,
     title     = {Spatial Reasoning with Denoising Models},
     author    = {Wewer, Christopher and Pogodzinski, Bartlomiej and Schiele, Bernt and Lenssen, Jan Eric},
-    booktitle = {arXiv},
+    booktitle = {International Conference on Machine Learning ({ICML})},
     year      = {2025},
 }</code></pre>
   </div>
