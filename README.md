@@ -36,12 +36,12 @@ pip install -r requirements.txt
 ## 💾 Datasets & Checkpoints
 
 ### Datasets
-We provide the relevant files for the datasets as part of our releases [here](https://github.com/Chrixtar/latentsplat/releases).
+We provide the relevant files for the datasets as part of our releases [here](https://github.com/Chrixtar/SRM/releases).
 Please extract the `datasets.zip` in the project root directory or modify the root path of the dataset config files in `config/dataset`.
 For counting polygons on FFHQ background, please download [FFHQ](https://github.com/NVlabs/ffhq-dataset) first and provide the path in `config/dataset/counting_polygons_ffhq.yaml`.
 
 ### Checkpoints
-We provide checkpoints of all trained models in our releases [here](https://github.com/Chrixtar/latentsplat/releases).
+We provide checkpoints of all trained models in our releases [here](https://github.com/Chrixtar/SRM/releases).
 Simply download all and extract them in the project root directory.
 
 ## 📣 Usage
