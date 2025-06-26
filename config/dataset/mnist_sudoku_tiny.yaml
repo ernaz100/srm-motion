@@ -1,0 +1,7 @@
+name: mnist_sudoku_lazy
+root: datasets/mnist_sudoku
+image_shape: [252, 252]
+subset_size: 10  # Tiny subset - only 10 samples
+top_n: 10        # Only 10 MNIST images per digit (0-9)
+augment: false
+grayscale: true 

@@ -1,0 +1,40 @@
+# @package _global_
+
+defaults:
+  - override /dataset: mnist_sudoku_tiny
+  - override /model/denoiser: unet_256
+
+conditioning:
+  mask: true
+
+validation:
+  sampling:
+    name: mnist_sudoku
+
+wandb:
+  tags: [sudoku, mnist, tiny]
+  project: srm
+  entity: ernaz100
+  mode: online
+  activated: true
+  
+data_loader:
+  train:
+    # Reduced batch size for tiny dataset
+    batch_size: 8
+    num_workers: 0  # Disable multiprocessing to avoid pickling errors
+    persistent_workers: false
+  val:
+    batch_size: 8
+    num_workers: 0  # Disable multiprocessing
+    persistent_workers: false
+  test:
+    batch_size: 8
+    num_workers: 0  # Disable multiprocessing
+    persistent_workers: false
+
+# Reduced training parameters for faster training
+trainer:
+  max_steps: 10_000  # Reduced from 250_001
+  val_check_interval: 500  # More frequent validation
+  log_every_n_steps: 25    # More frequent logging 
