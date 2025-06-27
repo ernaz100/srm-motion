@@ -1,0 +1,12 @@
+# @package _global_.test
+defaults:
+  - sampling  # Use the sampling evaluation
+
+# Override sampling parameters
+sampling:
+  name: sampling
+  num_samples: 10
+  samplers:
+    fixed:
+      name: fixed
+      num_steps: 50 

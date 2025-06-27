@@ -1,0 +1,6 @@
+Training sample indices for ms_tiny experiment:
+Dataset: datasets/mnist_sudoku
+Total samples: 10
+Indices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+Subset size: 10
+Top N: 10
