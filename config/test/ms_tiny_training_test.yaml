@@ -1,5 +1,9 @@
 # Test on the exact same training data (indices 0-9)
-training_data:
+defaults:
+  - ms_easy  # Use the same structure as ms_easy but override dataset settings
+
+# Override to use training data
+easy:
   name: mnist_sudoku
   subset_size: 10
   top_n: 10
