@@ -1,12 +1,13 @@
-# Test on the exact same training data (indices 0-9)
+# Test on the exact same training data - using same config as training
 defaults:
-  - ms_easy  # Use the same structure as ms_easy but override dataset settings
+  - override /dataset: mnist_sudoku_tiny  # Use exact same dataset config as training
 
-# Override to use training data
+# Override evaluation settings
 easy:
-  name: mnist_sudoku
-  subset_size: 10
-  top_n: 10
+  name: mnist_sudoku_lazy  # Same as training
+  root: datasets/mnist_sudoku  # Same as training
+  subset_size: 10  # Same as training
+  top_n: 10  # Same as training
   num_samples: 10  # Generate one sample per training puzzle
   save_samples: true  # Save the generated images
   sampling_video: false 
