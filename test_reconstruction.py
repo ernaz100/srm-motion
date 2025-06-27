@@ -9,12 +9,14 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from omegaconf import OmegaConf
 from torchvision.utils import save_image
+from dacite import Config, from_dict
 
 from src.dataset import get_dataset
 from src.type_extensions import ConditioningCfg
 from src.model import Wrapper
 from src.sampler import get_sampler, FixedSamplerCfg
-from src.config import load_typed_root_config
+from src.config import load_typed_root_config, RootCfg
+from src.evaluation import EvaluationCfg
 
 
 def load_checkpoint(checkpoint_path: str, map_location='cpu'):
@@ -37,7 +39,44 @@ def test_reconstruction():
 
     # Load Hydra-generated config and cast it to the typed RootCfg dataclass
     cfg_dict = OmegaConf.load(hydra_cfg_path)
-    cfg = load_typed_root_config(cfg_dict)
+    
+    # Custom type hooks to handle evaluation configs
+    def evaluation_config_hook(data: dict) -> EvaluationCfg:
+        """Convert dict to appropriate evaluation config based on name field."""
+        if not isinstance(data, dict) or 'name' not in data:
+            raise ValueError(f"Invalid evaluation config: {data}")
+        
+        name = data['name']
+        if name == 'mnist_sudoku':
+            from src.evaluation.mnist_sudoku_evaluation import MnistSudokuEvaluationCfg
+            return from_dict(MnistSudokuEvaluationCfg, data)
+        elif name == 'sampling':
+            from src.evaluation.sampling_evaluation import SamplingEvaluationCfg
+            return from_dict(SamplingEvaluationCfg, data)
+        elif name == 'mnist_grid':
+            from src.evaluation.mnist_grid_evaluation import MnistGridEvaluationCfg
+            return from_dict(MnistGridEvaluationCfg, data)
+        elif name == 'counting_objects':
+            from src.evaluation.counting_objects_evaluation import CountingObjectsEvaluationCfg
+            return from_dict(CountingObjectsEvaluationCfg, data)
+        elif name == 'even_pixels':
+            from src.evaluation.even_pixels_evaluation import EvenPixelsEvaluationCfg
+            return from_dict(EvenPixelsEvaluationCfg, data)
+        else:
+            raise ValueError(f"Unknown evaluation config name: {name}")
+    
+    # Custom type hooks
+    type_hooks = {
+        Path: Path,
+        EvaluationCfg: evaluation_config_hook,
+    }
+    
+    # Load config with custom type hooks
+    cfg = from_dict(
+        RootCfg,
+        OmegaConf.to_container(cfg_dict),
+        config=Config(type_hooks=type_hooks),
+    )
 
     # Prepare dataset using the *same* configuration as during training
     conditioning = cfg.conditioning
@@ -123,8 +162,11 @@ def test_reconstruction():
                 error = torch.mean((image - reconstructed['sample']) ** 2).item()
                 print(f"   - Reconstruction error (MSE): {error:.6f}")
                 
-                # Save side-by-side image (original | reconstructed)
-                side_by_side = torch.cat([image, reconstructed['sample']], dim=3)  # concatenate along width
+                # Save side-by-side image with padding (original | spacer | reconstructed)
+                # Create white spacer (1 channel, same height, 10 pixels wide)
+                spacer_width = 10
+                spacer = torch.ones(1, 1, image.shape[2], spacer_width, device=image.device)
+                side_by_side = torch.cat([image, spacer, reconstructed['sample']], dim=3)  # concatenate along width
                 save_path = recon_dir / f"recon_{sample['index']}.png"
                 save_image(
                     side_by_side,
