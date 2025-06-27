@@ -2,7 +2,7 @@
 
 defaults:
   - override /dataset: mnist_sudoku_tiny
-  - override /model/denoiser: unet_128  # Smaller model to save memory
+  - override /model/denoiser: unet_256
 
 conditioning:
   mask: true
@@ -18,19 +18,23 @@ wandb:
   entity: ernaz100
   mode: online
   activated: true
-  
+
+# Use larger patches to reduce memory usage in time sampler
+patch_size: 28  # 252/28 = 9x9 = 81 patches instead of 252x252 = 63,504 patches
+
+# Reduced batch sizes for memory constraints
 data_loader:
   train:
     # Reduced batch size for tiny dataset
-    batch_size: 2  # Reduced from 8
+    batch_size: 16  # 
     num_workers: 0  # Disable multiprocessing to avoid pickling errors
     persistent_workers: false
   val:
-    batch_size: 2  # Reduced from 8
+    batch_size: 16  # 
     num_workers: 0  # Disable multiprocessing
     persistent_workers: false
   test:
-    batch_size: 2  # Reduced from 8
+    batch_size: 16  # 
     num_workers: 0  # Disable multiprocessing
     persistent_workers: false
 
@@ -39,10 +43,3 @@ trainer:
   max_steps: 10_000  # Reduced from 250_001
   val_check_interval: 500  # More frequent validation
   log_every_n_steps: 1    # More frequent logging
-  precision: bf16-mixed  # Use mixed precision to save memory
-  accumulate_grad_batches: 4  # Effective batch size = 2 * 4 = 8
-
-# PyTorch memory settings
-torch:
-  cudnn_benchmark: false  # Disable to save memory
-  float32_matmul_precision: medium  # Reduce precision to save memory 
