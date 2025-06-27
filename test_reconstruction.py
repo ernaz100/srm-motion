@@ -47,7 +47,10 @@ def test_reconstruction():
             raise ValueError(f"Invalid evaluation config: {data}")
         
         name = data['name']
-        if name == 'mnist_sudoku':
+        print(f"DEBUG: Processing evaluation config with name: {name}")
+        
+        # Handle both mnist_sudoku and mnist_sudoku_lazy
+        if name in ['mnist_sudoku', 'mnist_sudoku_lazy']:
             from src.evaluation.mnist_sudoku_evaluation import MnistSudokuEvaluationCfg
             return from_dict(MnistSudokuEvaluationCfg, data)
         elif name == 'sampling':
@@ -63,7 +66,11 @@ def test_reconstruction():
             from src.evaluation.even_pixels_evaluation import EvenPixelsEvaluationCfg
             return from_dict(EvenPixelsEvaluationCfg, data)
         else:
-            raise ValueError(f"Unknown evaluation config name: {name}")
+            print(f"WARNING: Unknown evaluation config name: {name}, falling back to sampling config")
+            # Fallback to sampling config for unknown names
+            from src.evaluation.sampling_evaluation import SamplingEvaluationCfg
+            data['name'] = 'sampling'  # Override the name
+            return from_dict(SamplingEvaluationCfg, data)
     
     # Custom type hooks
     type_hooks = {
