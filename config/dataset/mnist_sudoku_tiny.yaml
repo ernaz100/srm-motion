@@ -3,5 +3,6 @@ root: datasets/mnist_sudoku
 image_shape: [252, 252]
 subset_size: 10  # Tiny subset - only 10 samples
 top_n: 10        # Only 10 MNIST images per digit (0-9)
+test_samples_num: 1000  # Number of samples reserved for test/val
 augment: false
 grayscale: true 

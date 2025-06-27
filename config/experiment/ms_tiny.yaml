@@ -7,10 +7,8 @@ defaults:
 conditioning:
   mask: true
 
-validation:
-  sampling:
-    name: sampling  # Use simple sampling instead of mnist_sudoku
-    num_samples: 2  # Only validate on 2 samples for tiny dataset
+# Use larger patches to reduce memory usage in time sampler
+patch_size: 28  # 252/28 = 9x9 = 81 patches instead of 252x252 = 63,504 patches
 
 wandb:
   tags: [sudoku, mnist, tiny]
@@ -18,9 +16,6 @@ wandb:
   entity: ernaz100
   mode: online
   activated: true
-
-# Use larger patches to reduce memory usage in time sampler
-patch_size: 28  # 252/28 = 9x9 = 81 patches instead of 252x252 = 63,504 patches
 
 # Reduced batch sizes for memory constraints
 data_loader:
