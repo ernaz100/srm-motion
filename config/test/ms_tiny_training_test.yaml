@@ -1,0 +1,8 @@
+# Test on the exact same training data (indices 0-9)
+training_data:
+  name: mnist_sudoku
+  subset_size: 10
+  top_n: 10
+  num_samples: 10  # Generate one sample per training puzzle
+  save_samples: true  # Save the generated images
+  sampling_video: false 
