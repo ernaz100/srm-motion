@@ -7,8 +7,10 @@ defaults:
 conditioning:
   mask: true
 
-# Use larger patches to reduce memory usage in time sampler
-patch_size: 28  # 252/28 = 9x9 = 81 patches instead of 252x252 = 63,504 patches
+validation:
+  sampling:
+    name: sampling  # Use simple sampling instead of mnist_sudoku
+    num_samples: 2  # Only validate on 2 samples for tiny dataset
 
 wandb:
   tags: [sudoku, mnist, tiny]
@@ -17,19 +19,22 @@ wandb:
   mode: online
   activated: true
 
+# Use larger patches to reduce memory usage in time sampler
+patch_size: 28  # 252/28 = 9x9 = 81 patches instead of 252x252 = 63,504 patches
+
 # Reduced batch sizes for memory constraints
 data_loader:
   train:
     # Reduced batch size for tiny dataset
-    batch_size: 16  # 
+    batch_size: 2  # Reduced from 8
     num_workers: 0  # Disable multiprocessing to avoid pickling errors
     persistent_workers: false
   val:
-    batch_size: 16  # 
+    batch_size: 2  # Reduced from 8
     num_workers: 0  # Disable multiprocessing
     persistent_workers: false
   test:
-    batch_size: 16  # 
+    batch_size: 2  # Reduced from 8
     num_workers: 0  # Disable multiprocessing
     persistent_workers: false
 
