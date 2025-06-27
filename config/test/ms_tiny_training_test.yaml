@@ -1,8 +1,8 @@
 # Test on the exact same training data - using same config as training
 defaults:
-  - override /dataset: mnist_sudoku_tiny  # Use exact same dataset config as training
+  - ms_easy  # Use ms_easy as base
 
-# Override evaluation settings
+# Override to use training data settings
 easy:
   name: mnist_sudoku_lazy  # Same as training
   root: datasets/mnist_sudoku  # Same as training
