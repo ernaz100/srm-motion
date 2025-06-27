@@ -52,7 +52,10 @@ def test_reconstruction():
         # Handle both mnist_sudoku and mnist_sudoku_lazy
         if name in ['mnist_sudoku', 'mnist_sudoku_lazy']:
             from src.evaluation.mnist_sudoku_evaluation import MnistSudokuEvaluationCfg
-            return from_dict(MnistSudokuEvaluationCfg, data)
+            # Update the name to match the expected literal type
+            data_copy = data.copy()
+            data_copy['name'] = 'mnist_sudoku'
+            return from_dict(MnistSudokuEvaluationCfg, data_copy)
         elif name == 'sampling':
             from src.evaluation.sampling_evaluation import SamplingEvaluationCfg
             return from_dict(SamplingEvaluationCfg, data)
