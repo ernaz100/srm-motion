@@ -38,7 +38,7 @@ data_loader:
 trainer:
   max_steps: 10_000  # Reduced from 250_001
   val_check_interval: 500  # More frequent validation
-  log_every_n_steps: 25    # More frequent logging
+  log_every_n_steps: 1    # More frequent logging
   precision: bf16-mixed  # Use mixed precision to save memory
   accumulate_grad_batches: 4  # Effective batch size = 2 * 4 = 8
 
