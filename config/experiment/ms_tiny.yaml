@@ -2,7 +2,7 @@
 
 defaults:
   - override /dataset: mnist_sudoku_tiny
-  - override /model/denoiser: unet_256
+  - override /model/denoiser: unet_128  # Smaller model to save memory
 
 conditioning:
   mask: true
@@ -22,20 +22,27 @@ wandb:
 data_loader:
   train:
     # Reduced batch size for tiny dataset
-    batch_size: 8
+    batch_size: 2  # Reduced from 8
     num_workers: 0  # Disable multiprocessing to avoid pickling errors
     persistent_workers: false
   val:
-    batch_size: 8
+    batch_size: 2  # Reduced from 8
     num_workers: 0  # Disable multiprocessing
     persistent_workers: false
   test:
-    batch_size: 8
+    batch_size: 2  # Reduced from 8
     num_workers: 0  # Disable multiprocessing
     persistent_workers: false
 
-# Reduced training parameters for faster training
+# Memory optimization settings
 trainer:
   max_steps: 10_000  # Reduced from 250_001
   val_check_interval: 500  # More frequent validation
-  log_every_n_steps: 25    # More frequent logging 
+  log_every_n_steps: 25    # More frequent logging
+  precision: bf16-mixed  # Use mixed precision to save memory
+  accumulate_grad_batches: 4  # Effective batch size = 2 * 4 = 8
+
+# PyTorch memory settings
+torch:
+  cudnn_benchmark: false  # Disable to save memory
+  float32_matmul_precision: medium  # Reduce precision to save memory 
