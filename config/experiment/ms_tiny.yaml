@@ -9,7 +9,8 @@ conditioning:
 
 validation:
   sampling:
-    name: mnist_sudoku
+    name: sampling  # Use simple sampling instead of mnist_sudoku
+    num_samples: 2  # Only validate on 2 samples for tiny dataset
 
 wandb:
   tags: [sudoku, mnist, tiny]
