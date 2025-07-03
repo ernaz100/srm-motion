@@ -1,0 +1,53 @@
+# @package _global_
+
+defaults:
+  - override /dataset: mnist_sudoku_tiny_final
+  - override /model/denoiser: unet_256
+
+conditioning:
+  mask: true
+
+validation:
+  sampling:
+    name: sampling  # Use simple sampling instead of mnist_sudoku
+    num_samples: 1  # Only validate on 1 sample for tiny dataset
+
+wandb:
+  tags: [sudoku, mnist, tiny, no_uncertainty, explicit_data]
+  project: srm
+  entity: ernaz100
+  mode: online
+  activated: true
+
+# Use larger patches to reduce memory usage in time sampler
+patch_size: 28  # 252/28 = 9x9 = 81 patches instead of 252x252 = 63,504 patches
+
+# Disable uncertainty estimation
+model:
+  learn_sigma: false  # Disable uncertainty estimation
+
+loss:
+  sigma:
+    weight: 0.0  # Set sigma loss weight to 0
+
+# Reduced batch sizes for memory constraints
+data_loader:
+  train:
+    # Reduced batch size for tiny dataset
+    batch_size: 2  # Reduced from 8
+    num_workers: 0  # Disable multiprocessing to avoid pickling errors
+    persistent_workers: false
+  val:
+    batch_size: 2  # Reduced from 8
+    num_workers: 0  # Disable multiprocessing
+    persistent_workers: false
+  test:
+    batch_size: 2  # Reduced from 8
+    num_workers: 0  # Disable multiprocessing
+    persistent_workers: false
+
+# Memory optimization settings
+trainer:
+  max_steps: 10_000  # Reduced from 250_001
+  val_check_interval: 500  # More frequent validation
+  log_every_n_steps: 1    # More frequent logging 

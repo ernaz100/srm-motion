@@ -1,0 +1,10 @@
+name: mnist_sudoku_explicit_indices
+root: datasets/mnist_sudoku
+image_shape: [252, 252]
+subset_size: 10  # Tiny subset - only 10 samples
+top_n: 10        # Only 10 MNIST images per digit (0-9)
+test_samples_num: 0  # Use all data for training
+train_indices: [0,1,2, 3, 4, 5, 6, 7, 8, 9]  # Explicitly specify which indices to use for training
+validation_indices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]  # Explicitly specify which indices to use for validation
+augment: false
+grayscale: true 

@@ -192,7 +192,8 @@ class SequentialAdaptiveSampler(Sampler[SequentialAdaptiveSamplerCfg]):
                 use_ema=self.cfg.use_ema
             )
             
-            sigma_theta.squeeze_(1)
+            if sigma_theta is not None:
+                sigma_theta.squeeze_(1)
             should_predict = step_targets == step_id
 
             if is_unknown_map.sum() > self.cfg.epsilon and should_predict.any():
@@ -269,7 +270,7 @@ class SequentialAdaptiveSampler(Sampler[SequentialAdaptiveSamplerCfg]):
             if return_time:
                 all_t.append(t)
                 last_next_t = t_next
-            if return_sigma:
+            if return_sigma and sigma_theta is not None:
                 all_sigma.append(sigma_theta.masked_fill_(t == 0, 0))
             if return_x:
                 all_x.append(model.flow.get_x(t, zt=z_t, **{model.cfg.model.parameterization: mean_theta.squeeze(1)}))

@@ -69,8 +69,9 @@ class Sampler(Generic[T], ABC):
 
         if sigma_theta is not None:
             sigma_theta.squeeze_(1)
-        
-        sigma_theta = sigma_theta.masked_fill_(t.squeeze(1) == 0, 0) if return_sigma else None
+            sigma_theta = sigma_theta.masked_fill_(t.squeeze(1) == 0, 0) if return_sigma else None
+        else:
+            sigma_theta = None
         conditional_p = model.flow.conditional_p(
             mean_theta, z_t, t, t_next.unsqueeze(1), self.cfg.alpha, self.cfg.temperature, v_theta=v_theta
         )

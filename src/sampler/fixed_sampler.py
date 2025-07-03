@@ -66,7 +66,7 @@ class FixedSampler(Sampler[FixedSamplerCfg]):
                     z_t = masked + mask * z_t
             if return_intermediate:
                 all_z_t.append(z_t)
-                if return_sigma:
+                if return_sigma and sigma_theta is not None:
                     all_sigma.append(sigma_theta)
                 if return_x:
                     all_x.append(x)
@@ -82,7 +82,7 @@ class FixedSampler(Sampler[FixedSamplerCfg]):
             if return_time:
                 res["all_t"] = list(all_t.transpose(0, 1))
 
-            if return_sigma:
+            if return_sigma and all_sigma:
                 all_sigma = torch.stack((*all_sigma, all_sigma[-1]), dim=0)
                 res["all_sigma"] = list(all_sigma.transpose(0, 1))
             
