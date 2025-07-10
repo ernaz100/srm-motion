@@ -11,6 +11,7 @@ from src.env import DEBUG
 from src.misc.nn_module_tools import freeze
 from .class_embedding import get_class_embedding, ClassEmbeddingCfg, ClassEmbeddingParametersCfg
 from .embedding import get_embedding, EmbeddingCfg, EmbeddingSinusodialCfg
+from src.type_extensions import ConditioningCfg
 
 
 @dataclass
@@ -41,16 +42,17 @@ class Denoiser(Module, ABC, Generic[T]):
         d_in: int,
         d_out: int,
         image_shape: Sequence[int],
-        num_classes: int | None = None
+        num_classes: int | None = None,
+        conditioning_cfg: ConditioningCfg = None
     ) -> None:
         super(Denoiser, self).__init__()
         self.cfg = cfg
+        self.conditioning_cfg = conditioning_cfg
         self.d_in = d_in
         self.d_out = d_out
         self.image_shape = tuple(image_shape)
-        self.labels = num_classes is not None
         self.time_embedding = get_embedding(cfg.time_embedding, self.d_t)
-        if self.labels:
+        if num_classes is not None:
             assert cfg.class_embedding is not None
             self.class_embedding = get_class_embedding(cfg.class_embedding, self.d_c, num_classes)
 
@@ -79,12 +81,19 @@ class Denoiser(Module, ABC, Generic[T]):
 
     def embed_conditioning(
         self,
-        label: Int64[Tensor, "batch"] | None = None,
+        label: Tensor | None = None,
     ) -> Float[Tensor, "#batch d_c"] | None:
         emb = None
-        if self.labels:
+        if self.conditioning_cfg and self.conditioning_cfg.label:
             assert label is not None
-            emb = self.class_embedding.forward(label)
+            if hasattr(self, 'class_embedding') and self.class_embedding is not None:
+                emb = self.class_embedding.forward(label)
+            else:
+                # For continuous labels (like text embeddings), ensure batch dimension
+                if label.dim() == 1:
+                    emb = label.unsqueeze(0)
+                else:
+                    emb = label
         return emb
 
     @abstractmethod
@@ -92,7 +101,7 @@ class Denoiser(Module, ABC, Generic[T]):
         self, 
         x: Float[Tensor, "batch time d_in height width"],
         t: Float[Tensor, "batch time 1 height width"],
-        label: Int64[Tensor, "batch"] | None = None
+        label: Tensor | None = None
     ) -> Float[Tensor, "batch time d_out height width"]:
         """
         Arguments:
@@ -106,12 +115,12 @@ class Denoiser(Module, ABC, Generic[T]):
         self, 
         x: Float[Tensor, "batch time d_in height width"],
         t: Float[Tensor, "batch time 1 height width"],
-        label: Int64[Tensor, "batch"] | None = None,
+        label: Tensor | None = None,
     ) -> Float[Tensor, "batch time d_out height width"]:
         return self.forward(x, t, label)
 
     def init_weights(self) -> None:
-        if self.labels:
+        if hasattr(self, 'class_embedding') and self.class_embedding is not None:
             self.class_embedding.init_weights()
 
     def get_weight_decay_parameter_groups(self) -> tuple[list[Parameter], list[Parameter]]:

@@ -11,6 +11,7 @@ from .dataset_mnist_sudoku_explicit_indices import DatasetMnistSudokuExplicitInd
 from .dataset_counting_polygons import DatasetCountingPolygonsBlank, DatasetCountingPolygonsBlankCfg
 from .dataset_counting_polygons import DatasetCountingPolygonsFFHQ, DatasetCountingPolygonsFFHQCfg
 from .dataset_even_pixels import DatasetEvenPixels, DatasetEvenPixelsCfg
+from .dataset_humanml3d import DatasetHumanML3D, DatasetHumanML3DCfg
 
 from src.type_extensions import ConditioningCfg, Stage
 
@@ -29,6 +30,7 @@ DATASETS: dict[str, Dataset] = {
     "counting_polygons_ffhq_explicit_conditional": DatasetCountingPolygonsFFHQ,
     "counting_polygons_ffhq_ambiguous_conditional": DatasetCountingPolygonsFFHQ,
     "even_pixels": DatasetEvenPixels,
+    "humanml3d": DatasetHumanML3D,
 }
 
 
@@ -42,6 +44,7 @@ DatasetCfg = Union[
     DatasetCountingPolygonsBlankCfg,
     DatasetCountingPolygonsFFHQCfg,
     DatasetEvenPixelsCfg,
+    DatasetHumanML3DCfg,
 ]
 
 

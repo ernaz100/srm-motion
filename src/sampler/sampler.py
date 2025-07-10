@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from math import prod
-from typing import Generic, Sequence, TypeVar
+from typing import Generic, Sequence, TypeVar, Any
 
 from jaxtyping import Float, Int64
 import torch
@@ -48,7 +48,7 @@ class Sampler(Generic[T], ABC):
         z_t: Float[Tensor, "batch dim height width"], 
         t: Float[Tensor, "batch 1 height width"],
         t_next: Float[Tensor, "batch 1 height width"],
-        label: Int64[Tensor, "batch"] | None = None,
+        label: Any | None = None,
         c_cat: Float[Tensor, "batch d_c height width"] | None = None,
         return_sigma: bool = True,
         return_x: bool = True
@@ -88,13 +88,13 @@ class Sampler(Generic[T], ABC):
         image_shape: Sequence[int] | None = None,
         z_t: Float[Tensor, "batch dim height width"] | None = None,
         t: Float[Tensor, "batch 1 height width"] | None = None,
-        label: Int64[Tensor, "batch"] | None = None,
+        label: Any | None = None,
         mask: Float[Tensor, "batch 1 height width"] | None = None,
         masked: Float[Tensor, "batch dim height width"] | None = None
     ) -> tuple[
         Float[Tensor, "batch dim height width"],        # z_t
         Float[Tensor, "batch 1 height width"],          # t
-        Int64[Tensor, "batch"] | None,                  # label
+        Any | None,                                     # label
         Float[Tensor, "batch d_c height width"] | None, # c_cat
         Float[Tensor, "batch dim height width"] | None  # eps
     ]:
@@ -127,7 +127,7 @@ class Sampler(Generic[T], ABC):
         image_shape: Sequence[int] | None = None,
         z_t: Float[Tensor, "batch dim height width"] | None = None,
         t: Float[Tensor, "batch 1 height width"] | None = None,
-        label: Int64[Tensor, "batch"] | None = None,
+        label: Any | None = None,
         mask: Float[Tensor, "batch 1 height width"] | None = None,
         masked: Float[Tensor, "batch dim height width"] | None = None,
         return_intermediate: bool = False,
@@ -144,7 +144,7 @@ class Sampler(Generic[T], ABC):
         image_shape: Sequence[int] | None = None,
         z_t: Float[Tensor, "batch dim height width"] | None = None,
         t: Float[Tensor, "batch 1 height width"] | None = None,
-        label: Int64[Tensor, "batch"] | None = None,
+        label: Any | None = None,
         mask: Float[Tensor, "batch 1 height width"] | None = None,
         masked: Float[Tensor, "batch dim height width"] | None = None,
         return_intermediate: bool = False,

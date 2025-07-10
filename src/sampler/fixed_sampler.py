@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Literal, Sequence
+from typing import Literal, Sequence, Any
 
 from jaxtyping import Float, Int64
 import torch
@@ -26,7 +26,7 @@ class FixedSampler(Sampler[FixedSamplerCfg]):
         image_shape: Sequence[int] | None = None,
         z_t: Float[Tensor, "batch dim height width"] | None = None,
         t: Float[Tensor, "batch 1 height width"] | None = None,
-        label: Int64[Tensor, "batch"] | None = None,
+        label: Any | None = None,
         mask: Float[Tensor, "batch 1 height width"] | None = None,
         masked: Float[Tensor, "batch dim height width"] | None = None,
         return_intermediate: bool = False,

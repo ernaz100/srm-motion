@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 from math import prod, exp
-from typing import Generic, Sequence, TypeVar
+from typing import Generic, Sequence, TypeVar, Union
 
 from einops import rearrange
 from jaxtyping import Float
@@ -164,16 +164,22 @@ class Dataset(TorchDataset, Generic[T], ABC):
     def __getitem__(self, idx: int, **load_kwargs) -> UnbatchedExample:
         sample = self.load(idx, **load_kwargs)
         res = UnbatchedExample(index=idx)
-        is_mask_given = sample["image"].mode in ("LA", "RGBA")
-        assert not self.conditioning_cfg.mask or is_mask_given, "Mask conditioning but no mask given"
-        res["image"] = self.transform(sample["image"])
-        if is_mask_given:
-            res["mask"] = res["image"][-1:]
-            res["image"] = res["image"][:-1]
-            res["mask"].round_()
-        res["image"] = self.rgb_transform(res["image"])
+        image = sample['image']
+        if isinstance(image, Tensor):
+            if image.shape[1:] != tuple(self.cfg.image_shape):
+                raise ValueError(f"Tensor shape {image.shape[1:]} does not match config {self.cfg.image_shape}")
+            res['image'] = self.rgb_transform(image)
+        else:
+            is_mask_given = image.mode in ("LA", "RGBA")
+            assert not self.conditioning_cfg.mask or is_mask_given, "Mask conditioning but no mask given"
+            res["image"] = self.transform(image)
+            if is_mask_given:
+                res["mask"] = res["image"][-1:]
+                res["image"] = res["image"][:-1]
+                res["mask"].round_()
+            res["image"] = self.rgb_transform(res["image"])
         if "path" in sample:
-                res["path"] = sample["path"]
+            res["path"] = sample["path"]
         if self.conditioning_cfg.label:
             res["label"] = sample["label"]
         return res

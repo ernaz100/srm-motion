@@ -125,8 +125,6 @@ class Wrapper(LightningModule):
         image_shape: Sequence[int],
         num_classes: int | None = None
     ) -> None:
-        if cfg.conditioning.label:
-            assert num_classes is not None
         super().__init__()
         self.cfg = cfg
         self.step_tracker = StepTracker(cfg.train.step_offset)
@@ -144,8 +142,10 @@ class Wrapper(LightningModule):
             cfg.model.denoiser, 
             d_in, 
             d_out,
+
             image_shape,
-            num_classes=num_classes if cfg.conditioning.label else None
+            num_classes,
+            conditioning_cfg=cfg.conditioning
         )
         if self.cfg.model.ema:
             self.ema_denoiser = AveragedModel(
@@ -187,16 +187,16 @@ class Wrapper(LightningModule):
 
     def forward(
         self,
-        z_t: Float[Tensor, "batch time d_data height width"], 
+        z_t: Float[Tensor, "batch time d_data height width"],
         t: Float[Tensor, "batch time 1 height width"],
-        label: Int64[Tensor, "batch"] | None = None,
+        label: Any | None = None,
         c_cat: Float[Tensor, "batch time d_c height width"] | None = None,
         sample: bool = False,
-        use_ema: bool = True    # NOTE ignored if sample == False or model has no EMA
+        use_ema: bool = True
     ) -> tuple[
         Float[Tensor, "batch time d_data height width"],
         Float[Tensor, "batch time d_data height width"] | None,
-        Float[Tensor, "batch time #d_data #height #width"] | None
+        Float[Tensor, "batch time 1 height width"] | None
     ]:
         in_t = z_t if c_cat is None else torch.cat((z_t, c_cat), dim=-3)
         if sample:

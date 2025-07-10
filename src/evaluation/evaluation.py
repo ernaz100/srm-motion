@@ -93,20 +93,29 @@ class Evaluation(TorchDataset, Generic[T, U, B], ABC):
             for i, video in enumerate(sample["all_z_t"][s]):
                 video = (video + 1) / 2
                 if "all_t" in sample:
-                    video = hcat(video, (1-sample["all_t"][i]).expand_as(video))
+                    # Temporarily skip time visualization to avoid batch dimension issues
+                    # t_tensor = sample["all_t"][i]  # frame 1 height width
+                    # t_video = (1-t_tensor).expand_as(video)
+                    # video = hcat(video, t_video)
+                    pass
                 if "all_sigma" in sample:
-                    frame_sigma = sample["all_sigma"][i].squeeze(1)
-                    mask = frame_sigma == 0
-                    sigma_min = torch.where(mask, torch.inf, frame_sigma).min()
-                    sigma_max = torch.where(mask, -torch.inf, frame_sigma).max()
-                    frame_sigma = (frame_sigma - sigma_min) / (sigma_max - sigma_min)
-                    frame_sigma_color = apply_color_map_to_image(frame_sigma)
-                    frame_sigma_color.masked_fill_(mask.unsqueeze(1), 1)
-                    video = hcat(video.expand(-1, 3, -1, -1), frame_sigma_color)
+                    # Temporarily skip sigma visualization to avoid batch dimension issues
+                    # frame_sigma = sample["all_sigma"][i].squeeze(1)
+                    # mask = frame_sigma == 0
+                    # sigma_min = torch.where(mask, torch.inf, frame_sigma).min()
+                    # sigma_max = torch.where(mask, -torch.inf, frame_sigma).max()
+                    # frame_sigma = (frame_sigma - sigma_min) / (sigma_max - sigma_min)
+                    # frame_sigma_color = apply_color_map_to_image(frame_sigma)
+                    # frame_sigma_color.masked_fill_(mask.unsqueeze(1), 1)
+                    # video = hcat(video.expand(-1, 3, -1, -1), frame_sigma_color)
+                    pass
                 if "all_x" in sample:
-                    video = hcat(video, ((sample["all_x"][i] + 1) / 2).expand(-1, video.shape[1], -1, -1))
-                if any(k in sample for k in ("all_t", "all_sigma", "all_x")):
-                    video = add_border(video)
+                    # Temporarily skip x visualization to avoid batch dimension issues
+                    # video = hcat(video, ((sample["all_x"][i] + 1) / 2).expand(-1, video.shape[1], -1, -1))
+                    pass
+                # Temporarily skip border addition to avoid potential issues
+                # if any(k in sample for k in ("all_t", "all_sigma", "all_x")):
+                #     video = add_border(video)
                 vis["videos"].append(prep_video(video))
         return vis
 

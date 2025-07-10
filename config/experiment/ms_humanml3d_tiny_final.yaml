@@ -1,0 +1,57 @@
+# @package _global_
+
+defaults:
+  - override /dataset: humanml3d_tiny_final
+  - override /model/denoiser: transformer  # Change to transformer
+
+conditioning:
+  mask: false
+  label: true
+
+validation:
+  sampling:
+    name: sampling  # Use simple sampling for validation
+    num_samples: 1  # Only validate on 1 sample for tiny dataset
+
+wandb:
+  tags: [humanml3d, tiny, no_uncertainty]
+  project: srm
+  entity: ernaz100
+  mode: online
+  activated: false
+
+patch_size: null  # Disable patch for sequences
+
+model:
+  denoiser:
+    num_layers: 6
+    num_heads: 8
+    d_model: 512
+    dim_feedforward: 2048
+    dropout: 0.1
+  learn_sigma: false
+
+time_interval: [0.0, 1.0]
+
+loss:
+  sigma:
+    weight: 0.0  # Set sigma loss weight to 0
+
+data_loader:
+  train:
+    batch_size: 2  # Reduced for tiny dataset and memory
+    num_workers: 0
+    persistent_workers: false
+  val:
+    batch_size: 1  # Set to 1 to avoid IndexError
+    num_workers: 0
+    persistent_workers: false
+  test:
+    batch_size: 2
+    num_workers: 0
+    persistent_workers: false
+
+trainer:
+  max_steps: 10_000  # Reduced for sanity check
+  val_check_interval: 500  # More frequent validation
+  log_every_n_steps: 1    # More frequent logging 

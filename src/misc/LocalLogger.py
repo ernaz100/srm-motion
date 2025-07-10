@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from jaxtyping import UInt8
 import numpy as np
@@ -8,6 +8,7 @@ from PIL import Image
 from pytorch_lightning.loggers.logger import Logger
 from pytorch_lightning.utilities import rank_zero_only
 from torchvision.io import write_video
+import shutil
 
 
 LOG_PATH = Path("outputs/local")
@@ -59,7 +60,7 @@ class LocalLogger(Logger):
     def log_video(
         self,
         key: str,
-        videos: list[UInt8[np.ndarray, "frame 3 height width"]],
+        videos: list[Union[UInt8[np.ndarray, "frame 3 height width"], str]],
         step: Optional[int] = None,
         caption: Optional[list[str]] = None,
         format: Optional[list[str]] = None,
@@ -84,4 +85,11 @@ class LocalLogger(Logger):
             c = f"{index:0>2}" if caption is None else caption[index]
             path = LOG_PATH / f"{key}/{step:0>6}_{c}.{format[index]}"
             path.parent.mkdir(exist_ok=True, parents=True)
-            write_video(str(path), video.transpose(0, 2, 3, 1), **kwarg_list[index])
+            
+            # Handle both file paths and numpy arrays
+            if isinstance(video, str):
+                # If video is a file path, copy the file
+                shutil.copy2(video, path)
+            else:
+                # If video is a numpy array, write it using torchvision
+                write_video(str(path), video.transpose(0, 2, 3, 1), **kwarg_list[index])

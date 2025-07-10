@@ -18,6 +18,7 @@ from .modules import (
     UpsampleCfg
 )
 from ..denoiser import Denoiser, DenoiserCfg
+from src.type_extensions import ConditioningCfg
 
 
 @dataclass
@@ -130,9 +131,10 @@ class UNetDenoiser(Denoiser[UNetDenoiserCfg]):
         d_in: int,
         d_out: int,
         image_shape: Sequence[int],
-        num_classes: int | None = None
+        num_classes: int | None = None,
+        conditioning_cfg: ConditioningCfg = None
     ) -> None:
-        super(UNetDenoiser, self).__init__(cfg, d_in, d_out, image_shape, num_classes)
+        super(UNetDenoiser, self).__init__(cfg, d_in, d_out, image_shape, num_classes, conditioning_cfg)
         unet_cfg = copy(cfg)
         unet_cfg.__class__ = UNetCfg
         self.model = UNet.from_config(unet_cfg, d_in, d_out, self.time_embedding)
@@ -149,7 +151,7 @@ class UNetDenoiser(Denoiser[UNetDenoiserCfg]):
         self, 
         x: Float[Tensor, "batch time d_in height width"],
         t: Float[Tensor, "batch time 1 height width"],
-        label: Int64[Tensor, "batch"] | None = None
+        label: Tensor | None = None
     ) -> Float[Tensor, "batch time d_out height width"]:
         """
         Arguments:

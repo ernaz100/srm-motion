@@ -13,6 +13,12 @@ from ..model import Wrapper
 from ..sampler import FixedSamplerCfg, get_sampler, Sampler, SamplerCfg
 from .types import EvaluationOutput
 
+import tempfile
+import os
+
+from .motion_visualization import recover_from_ric, plot_3d_motion
+from src.type_extensions import SamplingOutput
+
 
 class UnbatchedSamplingExample(UnbatchedExample, total=False):
     index: int
@@ -132,3 +138,25 @@ class SamplingEvaluation(Evaluation[T, UnbatchedSamplingExample, BatchedSampling
         if self.cfg.num_samples is not None:
             return self.cfg.num_samples
         return len(self.dataset)
+
+    def log_sample(
+        self,
+        model: Wrapper,
+        sample: SamplingOutput,
+        key: str,
+        names: list[str],
+        masked: Float[Tensor, "batch channel height width"] | None = None,
+        num_log: int | None = None
+    ) -> None:
+        if 'humanml3d' in self.dataset.cfg.name:
+            s = slice(num_log)
+            motions = sample["sample"][s].cpu().numpy().squeeze(1)  # [batch, time, features]
+            step = model.step_tracker.get_step()
+            for i, (mot, name) in enumerate(zip(motions, names[s])):
+                joints = recover_from_ric(mot)
+                temp_path = tempfile.mktemp(suffix='.mp4')
+                plot_3d_motion(joints, temp_path, title=name)
+                model.logger.log_video(f"{key}/video", [temp_path], step=step, caption=[name], fps=[self.cfg.fps], format=['mp4'])
+                os.remove(temp_path)  # Cleanup
+        else:
+            pass # The original code had this else block, but it was empty. Keeping it as is.

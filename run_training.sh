@@ -29,4 +29,4 @@ ls $WORK # not necessary just here to illustrate that $WORK is available here
 # - determine commandline arguments for `srun` calls
 conda activate $WORK/.conda/srm/
 # Compute Phase
-srun bash $WORK/srm-motion/train.sh ms_tiny
+srun python -m src.main +experiment=ms_humanml3d_tiny_final
