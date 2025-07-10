@@ -3,7 +3,7 @@
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+from matplotlib.animation import FuncAnimation, writers
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from textwrap import wrap
@@ -314,9 +314,26 @@ def extract_humanml3d_features(motion: np.ndarray) -> dict:
 
 
 def plot_3d_motion(motion: np.ndarray, save_path: str, title: str = "", fps: int = 20, radius: float = 3):
-    """Plot 3D stick figure motion and save as video."""
+    """
+    Plot 3D stick figure motion and save as video.
+    
+    Args:
+        motion: Motion data as numpy array of shape (seq_len, n_joints, 3)
+        save_path: Path to save the video file
+        title: Title for the animation
+        fps: Frames per second for the video
+        radius: Radius for the 3D plot limits
+    """
+    # Input validation
+    if motion.ndim != 3 or motion.shape[-1] != 3:
+        raise ValueError(f"Expected motion data of shape (seq_len, n_joints, 3), got {motion.shape}")
+    
     data = motion.copy()
-    # data *= 1.3  # Scale
+    
+    # Set matplotlib backend to Agg for headless environments
+    import matplotlib
+    matplotlib.use('Agg')
+    
     fig = plt.figure(figsize=(4, 4))
     ax = fig.add_subplot(111, projection="3d")
     ax.set_xlim3d([-radius / 2, radius / 2])
@@ -328,17 +345,36 @@ def plot_3d_motion(motion: np.ndarray, save_path: str, title: str = "", fps: int
     ax.set_zticklabels([])
     ax.view_init(elev=110, azim=15)
 
-    lines = []
     def update(frame):
         ax.cla()
         ax.set_title(title + f' [{frame}]')
         skeleton = data[frame]
         for chain, color in zip(kinematic_tree, colors):
-            line, = ax.plot(skeleton[chain, 0], skeleton[chain, 1], skeleton[chain, 2], color=color, linewidth=2.0)
-            lines.append(line)
+            ax.plot(skeleton[chain, 0], skeleton[chain, 1], skeleton[chain, 2], color=color, linewidth=2.0)
 
     anim = FuncAnimation(fig, update, frames=len(data), interval=1000 / fps)
-    anim.save(save_path, writer='ffmpeg', fps=fps)
+    
+    # Use proper FFmpeg writer to avoid PIL extension issues
+    try:
+        FFwriter = writers['ffmpeg']
+        writer = FFwriter(fps=fps, metadata=dict(artist='SRM'), bitrate=1800)
+        anim.save(save_path, writer=writer)
+    except Exception as e:
+        # Fallback: try without specifying writer
+        print(f"Warning: FFmpeg writer failed, trying fallback: {e}")
+        try:
+            anim.save(save_path, fps=fps)
+        except Exception as e2:
+            print(f"Error: Both FFmpeg writer and fallback failed: {e2}")
+            # Try saving as GIF as last resort
+            try:
+                gif_path = save_path.replace('.mp4', '.gif')
+                anim.save(gif_path, writer='pillow', fps=fps)
+                print(f"Saved as GIF instead: {gif_path}")
+            except Exception as e3:
+                print(f"Error: All save methods failed: {e3}")
+                raise
+    
     plt.close(fig)
 
 # Function to prep for logging: return list of images or video paths 
