@@ -154,9 +154,34 @@ class SamplingEvaluation(Evaluation[T, UnbatchedSamplingExample, BatchedSampling
             step = model.step_tracker.get_step()
             for i, (mot, name) in enumerate(zip(motions, names[s])):
                 joints = recover_from_ric(mot)
-                temp_path = tempfile.mktemp(suffix='.mp4')
-                plot_3d_motion(joints, temp_path, title=name)
-                model.logger.log_video(f"{key}/video", [temp_path], step=step, caption=[name], fps=[self.cfg.fps], format=['mp4'])
-                os.remove(temp_path)  # Cleanup
+                
+                # Use NamedTemporaryFile to ensure the file is actually created
+                with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as temp_file:
+                    temp_path = temp_file.name
+                
+                try:
+                    print(f"Creating video for {name} at {temp_path}")
+                    plot_3d_motion(joints, temp_path, title=name)
+                    
+                    # Verify the file was created before trying to log it
+                    if os.path.exists(temp_path):
+                        file_size = os.path.getsize(temp_path)
+                        print(f"Video file created successfully at {temp_path} (size: {file_size} bytes)")
+                        if file_size > 0:
+                            model.logger.log_video(f"{key}/video", [temp_path], step=step, caption=[name], fps=[self.cfg.fps], format=['mp4'])
+                        else:
+                            print(f"Warning: Video file is empty at {temp_path}")
+                    else:
+                        print(f"Warning: Video file was not created at {temp_path}")
+                        
+                except Exception as e:
+                    print(f"Error creating video for {name}: {e}")
+                    import traceback
+                    traceback.print_exc()
+                finally:
+                    # Cleanup: remove the temporary file
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+                        print(f"Cleaned up temporary file: {temp_path}")
         else:
             pass # The original code had this else block, but it was empty. Keeping it as is.
