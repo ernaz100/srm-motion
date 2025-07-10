@@ -31,7 +31,7 @@ test: {}
 
 hydra:
   run:
-    dir: ""   # override!
+    dir: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
 
 wandb:
   project: srm
