@@ -18,7 +18,7 @@ wandb:
   project: srm
   entity: ernaz100
   mode: online
-  activated: false
+  activated: true
 
 patch_size: null  # Disable patch for sequences
 
