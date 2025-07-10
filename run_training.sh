@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=8          # Number of CPU cores per task
 #SBATCH --nodes=1                  # Ensure that all cores are on the same machine with nodes=1
 #SBATCH --partition=a100-galvani   # Which partition will run your job
-#SBATCH --time=2-23:59             # Allowed runtime in D-HH:MM
+#SBATCH --time=0-23:59             # Allowed runtime in D-HH:MM
 #SBATCH --gres=gpu:1               # (optional) Requesting type and number of GPUs
 #SBATCH --mem=100G                  # Total memory pool for all cores (see also --mem-per-cpu); exceeding this number will cause your job to fail.
 #SBATCH --output=/mnt/lustre/work/ponsmoll/pba794/srm-motion/logs/myjob-%j.out       # File to which STDOUT will be written - make sure this is not on $HOME
