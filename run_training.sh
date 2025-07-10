@@ -27,6 +27,7 @@ ls $WORK # not necessary just here to illustrate that $WORK is available here
 # - loads virtual envs, like with anaconda
 # - set environment variables
 # - determine commandline arguments for `srun` calls
+source /etc/profile.d/conda.sh
 conda activate $WORK/.conda/srm/
 # Compute Phase
 srun python -m src.main +experiment=ms_humanml3d_tiny_final
