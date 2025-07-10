@@ -95,8 +95,29 @@ class DatasetHumanML3D(Dataset[DatasetHumanML3DCfg]):
             return json.load(f)
 
     def _filter_annotations(self, annotations: Dict[str, Any], min_sec: float, max_sec: float) -> Dict[str, Any]:
-        """Filter annotations by duration."""
-        return {k: v for k, v in annotations.items() if min_sec <= v['duration'] <= max_sec}
+        """Filter annotations by duration and exclude problematic datasets."""
+        filtered_annotations = {}
+        humanact12_count = 0
+        duration_filtered_count = 0
+        
+        for key, val in annotations.items():
+            path = val["path"]
+
+            # Remove humanact12 - buggy left/right + no SMPL
+            if "humanact12" in path:
+                humanact12_count += 1
+                continue
+
+            # Filter by duration
+            if min_sec <= val['duration'] <= max_sec:
+                filtered_annotations[key] = val
+            else:
+                duration_filtered_count += 1
+
+        print(f"[DEBUG] Filtered {humanact12_count} HumanAct12 samples and {duration_filtered_count} samples outside duration range [{min_sec}, {max_sec}]s")
+        print(f"[DEBUG] Kept {len(filtered_annotations)} samples after filtering")
+        
+        return filtered_annotations
 
     @property
     def _num_available(self) -> int:
@@ -106,18 +127,41 @@ class DatasetHumanML3D(Dataset[DatasetHumanML3DCfg]):
     def load(self, idx: int, **kwargs) -> Dict[str, Any]:
         print(f"[DEBUG] Loading idx={idx}, len(keyids)={len(self.keyids)}, stage={self.stage}")
         # Safety check: wrap index if it's out of range
-        if len(self.keyids) > 0:
-            idx = idx % len(self.keyids)
+        if len(self.keyids) == 0:
+            raise ValueError(f"No keyids available for stage {self.stage}")
+        
+        idx = idx % len(self.keyids)
         keyid = self.keyids[idx]
+        
+        if keyid not in self.annotations:
+            raise ValueError(f"Keyid {keyid} not found in annotations")
+            
         ann = self.annotations[keyid]
         path = ann['path']
         duration = ann['duration']
+        
+        # Additional safety checks
+        if duration <= 0:
+            raise ValueError(f"Invalid duration {duration} for keyid {keyid}")
+            
         min_frames = int(self.cfg.min_seconds * self.fps)
         max_frames = min(int(duration * self.fps), self.max_frames)
+        
+        if max_frames < min_frames:
+            raise ValueError(f"Duration {duration}s too short for min_seconds {self.cfg.min_seconds}s")
+            
         length = random.randint(min_frames, max_frames) if self.stage == "train" else max_frames
         start_frame = random.randint(0, int(duration * self.fps) - length) if self.stage == "train" else 0
+        
         motion_path = os.path.join(self.cfg.motion_dir, f'{path}.npy')
-        motion = np.load(motion_path)[start_frame : start_frame + length].astype(np.float32)
+        
+        if not os.path.exists(motion_path):
+            raise FileNotFoundError(f"Motion file not found: {motion_path}")
+            
+        try:
+            motion = np.load(motion_path)[start_frame : start_frame + length].astype(np.float32)
+        except Exception as e:
+            raise RuntimeError(f"Failed to load motion from {motion_path}: {e}")
         
         # Crop or pad features to n_features
         if motion.shape[1] > self.n_features:
