@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from math import ceil
-from typing import Iterator, Literal, NotRequired, TypeVar
+from typing import Iterator, Literal, NotRequired, TypeVar, Optional
 
 from jaxtyping import Float, Int64
 import numpy as np
@@ -17,21 +17,27 @@ import tempfile
 import os
 
 from .motion_visualization import recover_from_ric, plot_3d_motion
+from .motion_recovery import recover_from_smplrifke
 from src.type_extensions import SamplingOutput
 
 
 class UnbatchedSamplingExample(UnbatchedExample, total=False):
     index: int
-    image: NotRequired[Float[Tensor, "channel height width"]]
+    # image: NotRequired[Float[Tensor, "channel height width"]]
+    image: Optional[torch.Tensor]
     label: int
-    mask: NotRequired[Float[Tensor, "1 height width"]]
+    # mask: NotRequired[Float[Tensor, "1 height width"]]
+    mask: Optional[torch.Tensor]
 
 
 class BatchedSamplingExample(BatchedExample, total=False):
     index: Int64[Tensor, "batch"]
-    image: NotRequired[Float[Tensor, "batch channel height width"]]
-    label: NotRequired[Int64[Tensor, "batch"]]
-    mask: NotRequired[Float[Tensor, "batch 1 height width"]]
+    # image: NotRequired[Float[Tensor, "batch channel height width"]]
+    image: Optional[torch.Tensor]
+    # label: NotRequired[Int64[Tensor, "batch"]]
+    label: Optional[torch.Tensor]
+    # mask: NotRequired[Float[Tensor, "batch 1 height width"]]
+    mask: Optional[torch.Tensor]
     
     
 @dataclass
@@ -145,15 +151,21 @@ class SamplingEvaluation(Evaluation[T, UnbatchedSamplingExample, BatchedSampling
         sample: SamplingOutput,
         key: str,
         names: list[str],
-        masked: Float[Tensor, "batch channel height width"] | None = None,
+        # masked: Float[Tensor, "batch channel height width"] | None = None,
+        masked: Optional[torch.Tensor] = None,
         num_log: int | None = None
     ) -> None:
         if 'humanml3d' in self.dataset.cfg.name:
             s = slice(num_log)
-            motions = sample["sample"][s].cpu().numpy().squeeze(1)  # [batch, time, features]
+            motions = sample["sample"][s]
+            # Unnormalize the motion data using mean and std
+            motions = motions * self.dataset.std.to(motions.device) + self.dataset.mean.to(motions.device)
+            motions = motions.cpu().numpy().squeeze(1)  # [batch, time, features]
             step = model.step_tracker.get_step()
             for i, (mot, name) in enumerate(zip(motions, names[s])):
-                joints = recover_from_ric(mot)
+                # Recover joint positions from SMPL-RIFKE absolute motion data
+                smpldata = recover_from_smplrifke(mot, fps=self.dataset.cfg.fps, abs_root=True)
+                joints = smpldata["joints"]
                 
                 # Use NamedTemporaryFile to ensure the file is actually created
                 with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as temp_file:

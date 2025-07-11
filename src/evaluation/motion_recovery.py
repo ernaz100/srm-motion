@@ -212,16 +212,15 @@ def smplrifkefeats_to_smpldata(
         trajectory = vel_trajectory_local
         
         # Rotate local joints back to world
-        joints = torch.einsum("...jk,...lk->...lj", rotZ[..., :2, :2], joints_local[..., [0, 1]])
-        joints = torch.stack(
-            (joints[..., 0], joints[..., 1], joints_local[..., 2]), dim=-1
-        )
+        joints_xy = torch.einsum("...jk,...lk->...lj", rotZ[..., :2, :2], joints_local[..., [0, 1]])
+        joints_z = joints_local[..., 2:3]
+        joints = torch.cat([joints_xy, joints_z], dim=-1)
     else:
         # Original velocity-based representation - integrate
         # Remove the dummy last angle and integrate the angles
         angles = torch.cumsum(vel_angles[..., :-1], dim=-1)
         # The first angle is zero (canonicalization)
-        angles = first_angle + torch.cat((0 * angles[..., [0]], angles), dim=-1)
+        angles = first_angle + torch.cat((torch.zeros_like(angles[..., [0]]), angles), dim=-1)
         
         # Construct the rotation matrix
         rotZ = axis_angle_rotation("Z", angles)
@@ -231,22 +230,21 @@ def smplrifkefeats_to_smpldata(
             "...jk,...k->...j", rotZ[..., :2, :2], vel_trajectory_local
         )
         
-        joints = torch.einsum("...jk,...lk->...lj", rotZ[..., :2, :2], joints_local[..., [0, 1]])
-        joints = torch.stack(
-            (joints[..., 0], joints[..., 1], joints_local[..., 2]), dim=-1
-        )
+        joints_xy = torch.einsum("...jk,...lk->...lj", rotZ[..., :2, :2], joints_local[..., [0, 1]])
+        joints_z = joints_local[..., 2:3]
+        joints = torch.cat([joints_xy, joints_z], dim=-1)
         
         # Integrate trajectory (velocities)
         trajectory = torch.cumsum(vel_trajectory[..., :-1, :], dim=-2)
         # First position is zero
-        trajectory = torch.cat((0 * trajectory[..., [0], :], trajectory), dim=-2)
+        trajectory = torch.cat((torch.zeros_like(trajectory[..., [0], :]), trajectory), dim=-2)
     
     # Add the pelvis (which is still zero)
-    joints = torch.cat((0 * joints[..., [0], :], joints), dim=-2)
+    joints = torch.cat((torch.zeros_like(joints[..., [0], :]), joints), dim=-2)
     
     # Add back global translation and height to every joint
     joints[..., :, 2] += root_grav_axis[..., None]
-    joints[..., :, [0, 1]] += trajectory[..., None, :]
+    joints[..., :, :2] += trajectory[..., None, :]
     
     # Get back the translation for SMPL data
     trans = torch.cat([trajectory, root_grav_axis[..., None]], dim=-1)
@@ -283,13 +281,12 @@ def ungroup_smplrifke(features: torch.Tensor) -> Tuple[torch.Tensor, ...]:
     if features.shape[-1] != 205:
         raise ValueError(f"Expected SMPL-RIFKE feature dimension 205, got {features.shape[-1]}")
     
-    (
-        root_grav_axis,
-        vel_trajectory_local,
-        vel_angles,
-        poses_local_flatten,
-        joints_local_flatten,
-    ) = einops.unpack(features, [[], [2], [], [132], [69]], "... *")
+    # Extract without keeping singleton dimensions
+    root_grav_axis = features[..., 0]  # (...)
+    vel_trajectory_local = features[..., 1:3]  # (..., 2)
+    vel_angles = features[..., 3]  # (...)
+    poses_local_flatten = features[..., 4:136]  # (..., 132)
+    joints_local_flatten = features[..., 136:205]  # (..., 69)
     
     poses_local = einops.rearrange(poses_local_flatten, "... (l t) -> ... l t", t=6)
     joints_local = einops.rearrange(joints_local_flatten, "... (l t) -> ... l t", t=3)

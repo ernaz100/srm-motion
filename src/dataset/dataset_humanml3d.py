@@ -24,13 +24,13 @@ class DatasetHumanML3DCfg(DatasetCfg):
     """Configuration for HumanML3D dataset in SRM."""
     name: str = "humanml3d"
     motion_dir: str = "datasets/humanml3d/motions/AMASS_20.0_fps_nh_smplrifke_abs"
-    annotations_dir: str = "datasets/humanml3d/annotations"
+    annotations_dir: str = "datasets/humanml3d/annotations/humanml3d"
     text_emb_dir: str = "datasets/humanml3d/annotations/humanml3d/text_embeddings/ViT-B/32.npy"  # Path to text embeddings .npy
     text_index_path: str = "datasets/humanml3d/annotations/humanml3d/text_embeddings/ViT-B/32_index.json"  # Path to index mapping
     text_stats_dir: str = "datasets/humanml3d/stats/text_stats_abs"  # Path to text stats
     stats_dir: str = "datasets/humanml3d/stats/motion_stats_abs"
     max_length: int = 81  # Capped at 81 frames
-    n_features: int = 263
+    n_features: int = 205
     min_seconds: float = 2.0
     max_seconds: float = 81 / 20  # Max duration to fit 81 frames at 20 fps
     fps: int = 20
@@ -174,9 +174,9 @@ class DatasetHumanML3D(Dataset[DatasetHumanML3DCfg]):
             pad = np.zeros((self.max_frames - length, self.n_features), dtype=np.float32)
             motion = np.concatenate([motion, pad], axis=0)
         motion = torch.from_numpy(motion)
+        # Normalize motion data using mean and std
         motion = (motion - self.mean) / (self.std + 1e-6)
-        motion = motion.clamp(-3, 3) / 3
-        image = motion.unsqueeze(0)  # [1, max_frames, n_features] in approx [-1,1]
+        image = motion.unsqueeze(0)  # [1, max_frames, n_features]
         anns = ann['annotations']
         chosen_ann = random.choice(anns) if self.stage == 'train' else anns[0]
         seg_id = chosen_ann['seg_id']
