@@ -16,8 +16,7 @@ from .types import EvaluationOutput
 import tempfile
 import os
 
-from .motion_visualization import recover_from_ric, plot_3d_motion
-from .motion_recovery import recover_from_smplrifke
+from .motion_visualization import visualize_motion
 from src.type_extensions import SamplingOutput
 
 
@@ -159,21 +158,16 @@ class SamplingEvaluation(Evaluation[T, UnbatchedSamplingExample, BatchedSampling
             s = slice(num_log)
             motions = sample["sample"][s]
             # Unnormalize the motion data using mean and std
-            motions = motions * self.dataset.std.to(motions.device) + self.dataset.mean.to(motions.device)
-            motions = motions.cpu().numpy().squeeze(1)  # [batch, time, features]
+            motions = motions.cpu().squeeze(1)  # [batch, time, features]
             step = model.step_tracker.get_step()
-            for i, (mot, name) in enumerate(zip(motions, names[s])):
-                # Recover joint positions from SMPL-RIFKE absolute motion data
-                smpldata = recover_from_smplrifke(mot, fps=self.dataset.cfg.fps, abs_root=True)
-                joints = smpldata["joints"]
-                
+            for i, (mot, name) in enumerate(zip(motions, names[s])):                
                 # Use NamedTemporaryFile to ensure the file is actually created
                 with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as temp_file:
                     temp_path = temp_file.name
                 
                 try:
                     print(f"Creating video for {name} at {temp_path}")
-                    plot_3d_motion(joints, temp_path, title=name)
+                    visualize_motion(motion_data=mot, length=len(mot), output_path=temp_path, text_description=name, fps=20, device=model.device)
                     
                     # Verify the file was created before trying to log it
                     if os.path.exists(temp_path):
