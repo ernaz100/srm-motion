@@ -44,7 +44,7 @@ def extract_joints_smplrifke(
             "smpldata": smpldata,
         }
     elif value_from == "joints":
-        output = {"joints": joints.numpy()}
+        output = {"joints": joints.cpu().numpy()}
     else:
         raise NotImplementedError
     return output
