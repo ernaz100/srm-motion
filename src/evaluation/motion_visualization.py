@@ -40,7 +40,7 @@ def visualize_motion(
     # The motion features are expected to be in smplrifke format.
     # extract_joints will convert them to 3D joint positions.
     # smpl_layer is not needed when value_from is 'joints' (default).
-    joints = extract_joints(motion_tensor, featsname="smplrifke", fps=fps, abs_root = True)["joints"]
+    joints = extract_joints(motion_tensor, featsname="smplrifke", fps=fps, abs_root = False)["joints"]
 
     title = text_description
     
