@@ -57,4 +57,4 @@ trainer:
   log_every_n_steps: 1    # More frequent logging 
 
 optimizer:
-  lr: 1e-5
+  lr: 1e-4
