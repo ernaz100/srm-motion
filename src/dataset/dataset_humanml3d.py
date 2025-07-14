@@ -55,7 +55,13 @@ class DatasetHumanML3D(Dataset[DatasetHumanML3DCfg]):
         self.keyids = self._read_split(cfg.annotations_dir, stage)  # Use stage directly as str
         if stage == 'val':  # Use string for validation check
             train_keyids = self._read_split(cfg.annotations_dir, 'train')
-            self.keyids = train_keyids[:cfg.subset_size or len(train_keyids)]
+            # Load annotations early to filter
+            temp_annotations = self._load_annotations(cfg.annotations_dir)
+            temp_annotations = self._filter_annotations(temp_annotations, cfg.min_seconds, cfg.max_seconds)
+            # Get surviving train keyids
+            surviving_train_keyids = [k for k in train_keyids if k in temp_annotations]
+            # Take the first subset_size surviving ones for val
+            self.keyids = surviving_train_keyids[:cfg.subset_size or len(surviving_train_keyids)]
         self.annotations = self._load_annotations(cfg.annotations_dir)
         if stage != "test":
             self.annotations = self._filter_annotations(self.annotations, cfg.min_seconds, cfg.max_seconds)
@@ -81,6 +87,13 @@ class DatasetHumanML3D(Dataset[DatasetHumanML3DCfg]):
         self.text_mean = torch.load(os.path.join(cfg.text_stats_dir, 'mean.pt')).float()
         self.text_std = torch.load(os.path.join(cfg.text_stats_dir, 'std.pt')).float()
         # No preloading motions; load on fly in load
+
+    def __getitem__(self, idx: int, **load_kwargs) -> UnbatchedExample:
+        sample = super().__getitem__(idx, **load_kwargs)
+        # Re-add 'text' from load, since base __getitem__ discards it
+        loaded = self.load(idx, **load_kwargs)
+        sample['text'] = loaded['text']
+        return sample
 
     def _read_split(self, path: str, split: str) -> List[str]:
         """Read split file with keyids."""
@@ -151,7 +164,7 @@ class DatasetHumanML3D(Dataset[DatasetHumanML3DCfg]):
             raise ValueError(f"Duration {duration}s too short for min_seconds {self.cfg.min_seconds}s")
             
         length = random.randint(min_frames, max_frames) if self.stage == "train" else max_frames
-        start_frame = random.randint(0, int(duration * self.fps) - length) if self.stage == "train" else 0
+        start_frame = 0
         
         motion_path = os.path.join(self.cfg.motion_dir, f'{path}.npy')
         
@@ -183,5 +196,5 @@ class DatasetHumanML3D(Dataset[DatasetHumanML3DCfg]):
         emb_idx = self.text_index[text]  # Now looks up by text
         text_emb = torch.from_numpy(self.text_embeddings[emb_idx]).float()
         text_emb = (text_emb - self.text_mean) / (self.text_std + 1e-6)
-        sample = {'image': image, 'label': text_emb, 'path': motion_path}
+        sample = {'image': image, 'label': text_emb, 'path': motion_path, 'text': text}
         return sample 

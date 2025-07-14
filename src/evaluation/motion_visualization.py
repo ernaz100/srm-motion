@@ -8,6 +8,7 @@ import torch
 from src.dataset import get_dataset
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, writers
+import textwrap
 
 def visualize_motion(
     motion_data: torch.Tensor,
@@ -40,14 +41,17 @@ def visualize_motion(
     # The motion features are expected to be in smplrifke format.
     # extract_joints will convert them to 3D joint positions.
     # smpl_layer is not needed when value_from is 'joints' (default).
-    joints = extract_joints(motion_tensor, featsname="smplrifke", fps=fps, abs_root = False)["joints"]
+    joints = extract_joints(motion_tensor, featsname="smplrifke", fps=fps, abs_root = True)["joints"]
 
     title = text_description
+    
+    # Wrap the title to prevent overflow
+    wrapped_title = '\n'.join(textwrap.wrap(title, width=60))
     
     # Set up the figure
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(111, projection='3d')
-    fig.suptitle(title, fontsize=16)
+    fig.suptitle(wrapped_title, fontsize=16)
     
     # Set axis limits based on the data
     x_min, x_max = joints[:, :, 0].min(), joints[:, :, 0].max()
@@ -112,7 +116,7 @@ def visualize_motion(
                             [pred_frame[connection[0], 2], pred_frame[connection[1], 2]],
                             c=pred_color, alpha=0.6, linewidth=2)
         
-        fig.suptitle(f"{title}", fontsize=16)
+        fig.suptitle(wrapped_title, fontsize=16)
     
     # Create animation
     anim = FuncAnimation(fig, animate, frames=n_frames, interval=1000/fps, repeat=False)

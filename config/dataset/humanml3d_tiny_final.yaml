@@ -1,17 +1,17 @@
 name: humanml3d
-motion_dir: datasets/humanml3d/motions/AMASS_20.0_fps_nh_smplrifke
+motion_dir: datasets/humanml3d/motions/AMASS_20.0_fps_nh_smplrifke_abs
 annotations_dir: datasets/humanml3d/annotations/humanml3d
-stats_dir: datasets/humanml3d/stats/motion_stats
+stats_dir: datasets/humanml3d/stats/motion_stats_abs
 text_emb_dir: datasets/humanml3d/annotations/humanml3d/text_embeddings/ViT-B/32.npy
 text_index_path: datasets/humanml3d/annotations/humanml3d/text_embeddings/ViT-B/32_index.json
-text_stats_dir: datasets/humanml3d/stats/text_stats
+text_stats_dir: datasets/humanml3d/stats/text_stats_abs
 image_shape: [81, 205]  # Updated to match max_length
-subset_size: 10  # Tiny subset for sanity check
+subset_size: 1  # Tiny subset for sanity check
 test_samples_num: 0  # No separate test split
 augment: false
 grayscale: true
 max_length: 81  # Updated to accommodate the time range (4.05s * 20fps = 81 frames)
 n_features: 205
-min_seconds: 2.0
+min_seconds: 1.0
 max_seconds: 4.05
 fps: 20 

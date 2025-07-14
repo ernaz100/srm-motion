@@ -126,7 +126,8 @@ class Evaluation(TorchDataset, Generic[T, U, B], ABC):
         key: str,
         names: list[str],
         masked: Float[Tensor, "batch channel height width"] | None = None,
-        num_log: int | None = None
+        num_log: int | None = None,
+        texts: list[str] | None = None  # Add texts param
     ) -> None:
         names = names[slice(num_log)]
         vis = self.prep_sample(sample, masked, num_log)
@@ -174,7 +175,7 @@ class Evaluation(TorchDataset, Generic[T, U, B], ABC):
         for res in self.evaluate(model, batch, return_sample=log_samples):
             key = f"val/{self.tag}/{res['key']}"
             if log_samples:
-                self.log_sample(model, res["sample"], key, res["names"], res.get("masked", None), num_log_samples)
+                self.log_sample(model, res["sample"], key, res["names"], masked=res.get("masked", None), num_log=num_log_samples, texts=res.get("texts", None))
             if "metrics" in res:
                 # prepend metric keys for logging purposes
                 res["metrics"] = {f"{key}/{k}": v for k, v in res["metrics"].items()}

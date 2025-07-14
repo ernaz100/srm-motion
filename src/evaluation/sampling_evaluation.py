@@ -27,6 +27,7 @@ class UnbatchedSamplingExample(UnbatchedExample, total=False):
     label: int
     # mask: NotRequired[Float[Tensor, "1 height width"]]
     mask: Optional[torch.Tensor]
+    text: Optional[str]  # Add text field
 
 
 class BatchedSamplingExample(BatchedExample, total=False):
@@ -37,6 +38,7 @@ class BatchedSamplingExample(BatchedExample, total=False):
     label: Optional[torch.Tensor]
     # mask: NotRequired[Float[Tensor, "batch 1 height width"]]
     mask: Optional[torch.Tensor]
+    text: Optional[Tensor]  # Add text field (though it's str, can be list or tensor of strings)
     
     
 @dataclass
@@ -119,6 +121,7 @@ class SamplingEvaluation(Evaluation[T, UnbatchedSamplingExample, BatchedSampling
             out = EvaluationOutput(key=key, names=batch["name"], sample=sample)
             if masked is not None:
                 out["masked"] = masked
+            out["texts"] = batch.get("text", batch["name"])  # Propagate texts
             yield out
                 
     
@@ -132,8 +135,9 @@ class SamplingEvaluation(Evaluation[T, UnbatchedSamplingExample, BatchedSampling
                 if self.deterministic else np.random.randint(start, end)
             sample: UnbatchedSamplingExample = self.dataset.__getitem__(sample_idx, **kwargs)
             sample["name"] = str(sample_idx)
+            sample["text"] = sample.get("text", str(sample_idx))  # Use actual text if available, else fallback to index
         else:
-            sample = dict(index=idx, name=str(idx))
+            sample = dict(index=idx, name=str(idx), text=str(idx))
         return sample
 
     
@@ -152,7 +156,8 @@ class SamplingEvaluation(Evaluation[T, UnbatchedSamplingExample, BatchedSampling
         names: list[str],
         # masked: Float[Tensor, "batch channel height width"] | None = None,
         masked: Optional[torch.Tensor] = None,
-        num_log: int | None = None
+        num_log: int | None = None,
+        texts: Optional[list[str]] = None  # Add texts param
     ) -> None:
         if 'humanml3d' in self.dataset.cfg.name:
             s = slice(num_log)
@@ -167,7 +172,7 @@ class SamplingEvaluation(Evaluation[T, UnbatchedSamplingExample, BatchedSampling
                 
                 try:
                     print(f"Creating video for {name} at {temp_path}")
-                    visualize_motion(motion_data=mot, length=len(mot), output_path=temp_path, text_description=name, fps=20, device=model.device)
+                    visualize_motion(motion_data=mot, length=len(mot), output_path=temp_path, text_description=text_desc, fps=20, device=model.device)
                     
                     # Verify the file was created before trying to log it
                     if os.path.exists(temp_path):

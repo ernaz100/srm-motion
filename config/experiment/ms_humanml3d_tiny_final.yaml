@@ -39,7 +39,7 @@ loss:
 
 data_loader:
   train:
-    batch_size: 2  # Reduced for tiny dataset and memory
+    batch_size: 1  # Reduced for tiny dataset and memory
     num_workers: 0
     persistent_workers: false
   val:
@@ -47,7 +47,7 @@ data_loader:
     num_workers: 0
     persistent_workers: false
   test:
-    batch_size: 2
+    batch_size: 1
     num_workers: 0
     persistent_workers: false
 
