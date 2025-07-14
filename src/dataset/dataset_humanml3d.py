@@ -89,11 +89,20 @@ class DatasetHumanML3D(Dataset[DatasetHumanML3DCfg]):
         # No preloading motions; load on fly in load
 
     def __getitem__(self, idx: int, **load_kwargs) -> UnbatchedExample:
-        sample = super().__getitem__(idx, **load_kwargs)
-        # Re-add 'text' from load, since base __getitem__ discards it
-        loaded = self.load(idx, **load_kwargs)
-        sample['text'] = loaded['text']
-        return sample
+        sample = self.load(idx, **load_kwargs)
+        res = UnbatchedExample(index=idx)
+        image = sample['image']
+        res['image'] = image  # [1, max_frames, n_features]
+        if self.conditioning_cfg.mask:
+            # If mask conditioning is needed, add logic here if applicable
+            # For now, assuming no mask for motion data
+            pass
+        if 'label' in sample:
+            res['label'] = sample['label']
+        if 'path' in sample:
+            res['path'] = sample['path']
+        res['text'] = sample['text']  # Retain text from load
+        return res
 
     def _read_split(self, path: str, split: str) -> List[str]:
         """Read split file with keyids."""

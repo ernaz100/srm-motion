@@ -34,8 +34,8 @@ def visualize_motion(
     std = torch.load(os.path.join("datasets/humanml3d/stats/motion_stats_abs", 'std.pt')).float()
 
     # Move motion_data to the specified device and ensure float type
-    normalized = (motion_data + 1) / 2
-    motion_data = normalized * std.to(motion_data.device) + mean.to(motion_data.device)
+    #normalized = (motion_data + 1) / 2
+    motion_data = motion_data * std.to(motion_data.device) + mean.to(motion_data.device)
     motion_tensor = motion_data.to(device).float()
     
     # The motion features are expected to be in smplrifke format.
