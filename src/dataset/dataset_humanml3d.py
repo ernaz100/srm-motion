@@ -179,8 +179,8 @@ class DatasetHumanML3D(Dataset[DatasetHumanML3DCfg]):
         image = motion.unsqueeze(0)  # [1, max_frames, n_features]
         anns = ann['annotations']
         chosen_ann = random.choice(anns) if self.stage == 'train' else anns[0]
-        seg_id = chosen_ann['seg_id']
-        emb_idx = self.text_index.get(seg_id, 0)
+        text = chosen_ann['text']  # Use the text description as the key
+        emb_idx = self.text_index[text]  # Now looks up by text
         text_emb = torch.from_numpy(self.text_embeddings[emb_idx]).float()
         text_emb = (text_emb - self.text_mean) / (self.text_std + 1e-6)
         sample = {'image': image, 'label': text_emb, 'path': motion_path}
