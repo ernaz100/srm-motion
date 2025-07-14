@@ -2,7 +2,12 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+.DS_Store
+.hydra/
+.vscode
+*.mp4
+wandb/
+reconstructions/
 # C extensions
 *.so
 srm/
