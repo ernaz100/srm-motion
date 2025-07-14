@@ -169,7 +169,8 @@ class SamplingEvaluation(Evaluation[T, UnbatchedSamplingExample, BatchedSampling
                 # Use NamedTemporaryFile to ensure the file is actually created
                 with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as temp_file:
                     temp_path = temp_file.name
-                
+                    text_desc = texts[s][i] if texts else name  # Use text if provided
+
                 try:
                     print(f"Creating video for {name} at {temp_path}")
                     visualize_motion(motion_data=mot, length=len(mot), output_path=temp_path, text_description=text_desc, fps=20, device=model.device)
