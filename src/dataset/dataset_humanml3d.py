@@ -138,7 +138,7 @@ class DatasetHumanML3D(Dataset[DatasetHumanML3DCfg]):
         return len(self.keyids)
 
     def load(self, idx: int, **kwargs) -> Dict[str, Any]:
-        print(f"[DEBUG] Loading idx={idx}, len(keyids)={len(self.keyids)}, stage={self.stage}")
+        #print(f"[DEBUG] Loading idx={idx}, len(keyids)={len(self.keyids)}, stage={self.stage}")
         # Safety check: wrap index if it's out of range
         if len(self.keyids) == 0:
             raise ValueError(f"No keyids available for stage {self.stage}")
@@ -163,7 +163,7 @@ class DatasetHumanML3D(Dataset[DatasetHumanML3DCfg]):
         if max_frames < min_frames:
             raise ValueError(f"Duration {duration}s too short for min_seconds {self.cfg.min_seconds}s")
             
-        length = random.randint(min_frames, max_frames) if self.stage == "train" else max_frames
+        length = max_frames
         start_frame = 0
         
         motion_path = os.path.join(self.cfg.motion_dir, f'{path}.npy')
@@ -175,23 +175,17 @@ class DatasetHumanML3D(Dataset[DatasetHumanML3DCfg]):
             motion = np.load(motion_path)[start_frame : start_frame + length].astype(np.float32)
         except Exception as e:
             raise RuntimeError(f"Failed to load motion from {motion_path}: {e}")
-        
-        # Crop or pad features to n_features
-        if motion.shape[1] > self.n_features:
-            motion = motion[:, :self.n_features]
-        elif motion.shape[1] < self.n_features:
-            pad_width = self.n_features - motion.shape[1]
-            motion = np.pad(motion, ((0, 0), (0, pad_width)), mode='constant')
-        
+                
         if length < self.max_frames:
             pad = np.zeros((self.max_frames - length, self.n_features), dtype=np.float32)
             motion = np.concatenate([motion, pad], axis=0)
+            
         motion = torch.from_numpy(motion)
         # Normalize motion data using mean and std
         motion = (motion - self.mean) / (self.std + 1e-6)
         image = motion.unsqueeze(0)  # [1, max_frames, n_features]
         anns = ann['annotations']
-        chosen_ann = random.choice(anns) if self.stage == 'train' else anns[0]
+        chosen_ann = random.choice(anns)
         text = chosen_ann['text']  # Use the text description as the key
         emb_idx = self.text_index[text]  # Now looks up by text
         text_emb = torch.from_numpy(self.text_embeddings[emb_idx]).float()

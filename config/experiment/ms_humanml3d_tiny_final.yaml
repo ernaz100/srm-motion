@@ -52,6 +52,9 @@ data_loader:
     persistent_workers: false
 
 trainer:
-  max_steps: 10_000  # Reduced for sanity check
-  val_check_interval: 500  # More frequent validation
+  max_steps: 25000  # Reduced for sanity check
+  val_check_interval: 1000  # More frequent validation
   log_every_n_steps: 1    # More frequent logging 
+
+optimizer:
+  lr: 1e-5
