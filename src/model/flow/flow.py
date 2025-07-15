@@ -157,7 +157,21 @@ class Flow(Module, ABC, Generic[T]):
         x: Float[Tensor, "*batch"],
         t: Float[Tensor, "*#batch"]
     ) -> Float[Tensor, "*batch"]:
-        raise NotImplementedError()
+        """
+        Compute eps (the noise) from ut and x at time t.
+
+        The relationship between ut, x, and eps is model-dependent.
+        For the standard DDPM/flow parameterization, ut = eps - x, so eps = ut + x.
+
+        Args:
+            ut: Tensor representing the difference between eps and x, shape [..., *batch]
+            x: The clean data tensor, shape [..., *batch]
+            t: The time tensor, shape [..., *#batch] (not used in this default implementation)
+
+        Returns:
+            eps: The noise tensor, shape [..., *batch]
+        """
+        return ut + x
 
     def get_eps_from_ut_and_zt(
         self,
@@ -165,7 +179,32 @@ class Flow(Module, ABC, Generic[T]):
         zt: Float[Tensor, "*batch"],
         t: Float[Tensor, "*#batch"]
     ) -> Float[Tensor, "*batch"]:
-        raise NotImplementedError()
+        """
+        Compute eps (the noise) from ut and zt at time t.
+
+        The relationship is derived from the forward process:
+            zt = a(t) * x + b(t) * eps
+        and
+            ut = eps - x
+        Solving for eps:
+            x = (zt - b(t) * eps) / a(t)
+            ut = eps - x = eps - (zt - b(t) * eps) / a(t)
+            ut = eps - (zt / a(t)) + (b(t)/a(t)) * eps
+            ut = eps * (1 + b(t)/a(t)) - (zt / a(t))
+            ut + (zt / a(t)) = eps * (1 + b(t)/a(t))
+            eps = (ut + (zt / a(t))) / (1 + b(t)/a(t))
+
+        Args:
+            u_t: Tensor representing ut, shape [..., *batch]
+            zt: The noisy data tensor at time t, shape [..., *batch]
+            t: The time tensor, shape [..., *#batch]
+
+        Returns:
+            eps: The noise tensor, shape [..., *batch]
+        """
+        a_t = self.a(t)
+        b_t = self.b(t)
+        return (u_t + (zt / a_t)) / (1 + b_t / a_t)
     
     def get_eps_from_x_and_zt(
         self,
@@ -173,7 +212,7 @@ class Flow(Module, ABC, Generic[T]):
         zt: Float[Tensor, "*batch"],
         t: Float[Tensor, "*#batch"]
     ) -> Float[Tensor, "*batch"]:
-        assert torch.all(t > 0)
+        assert torch.all(t > 0) 
         return (zt - self.a(t) * x) / self.b(t)
 
     def get_eps(

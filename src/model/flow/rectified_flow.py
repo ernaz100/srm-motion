@@ -88,6 +88,15 @@ class RectifiedFlow(Flow[RectifiedFlowCfg]):
     ) -> Float[Tensor, "*batch"]:
          return zt - (1 - self.a(t)) * ut
 
+    def get_x_from_eps_and_zt(
+        self,
+        eps: Float[Tensor, "*batch"],
+        zt: Float[Tensor, "*batch"],
+        t: Float[Tensor, "*#batch"]
+    ) -> Float[Tensor, "*batch"]:
+        """Compute x from eps and zt using the relationship zt = a(t) * x + b(t) * eps"""
+        return (zt - self.b(t) * eps) / self.a(t)
+
     def conditional_p_ut(
         self,
         mean_theta: Float[Tensor, "*batch"],

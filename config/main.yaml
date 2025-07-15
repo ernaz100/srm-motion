@@ -15,7 +15,7 @@ model:
   flow:
     variance: learned_range
   learn_sigma: true
-  time_interval: [0.0, 1.0]
+  time_interval: [0.0, 0.999]
   ema: true
 
 loss:

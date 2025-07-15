@@ -5,13 +5,20 @@ defaults:
   - override /model/denoiser: transformer  # Change to transformer
 
 conditioning:
-  mask: false
+  mask: true  # Enable motion mask to zero out loss for padded frames
   label: true
 
 validation:
   sampling:
     name: sampling  # Use simple sampling for validation
     num_samples: 1  # Only validate on 1 sample for tiny dataset
+    samplers:
+      fixed:
+        name: fixed
+        max_steps: 1000  # Explicitly set number of sampling steps (was default)
+        alpha: 1
+        temperature: 1
+        use_ema: true
 
 wandb:
   tags: [humanml3d, tiny, no_uncertainty]
@@ -23,6 +30,7 @@ wandb:
 patch_size: null  # Disable patch for sequences
 
 model:
+  parameterization: eps
   denoiser:
     num_layers: 6
     num_heads: 8
@@ -31,7 +39,6 @@ model:
     dropout: 0.1
   learn_sigma: false
 
-time_interval: [0.0, 1.0]
 
 loss:
   sigma:
@@ -52,9 +59,9 @@ data_loader:
     persistent_workers: false
 
 trainer:
-  max_steps: 25000  # Reduced for sanity check
-  val_check_interval: 1000  # More frequent validation
+  max_steps: 50000  # Reduced for sanity check
+  val_check_interval: 5000  # More frequent validation
   log_every_n_steps: 1    # More frequent logging 
 
 optimizer:
-  lr: 1e-4
+  lr: 1e-4  # Increased from 1e-4

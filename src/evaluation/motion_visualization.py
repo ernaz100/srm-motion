@@ -17,6 +17,7 @@ def visualize_motion(
     text_description: str,
     device,
     fps: int = 20,
+    mask: torch.Tensor = None,
 ):
     """
     Create a video of a single motion.
@@ -28,8 +29,18 @@ def visualize_motion(
         text_description (str): Description/title for the video.
         fps (int, optional): Frames per second for the video. Defaults to 20.
         device (str, optional): Device to use for tensor operations. Defaults to "auto".
+        If mask is provided, only visualize frames where mask==1.
+
     """
     n_frames = length
+    if mask is not None:
+        # mask: [T] or [1, T, 1] or [T, 1]
+        mask = mask.squeeze()
+        if mask.dim() > 1:
+            mask = mask.squeeze(0)
+        valid_idx = mask.bool()
+        motion_data = motion_data[valid_idx]
+        n_frames = valid_idx.sum().item()
     mean = torch.load(os.path.join("datasets/humanml3d/stats/motion_stats_abs", 'mean.pt')).float()
     std = torch.load(os.path.join("datasets/humanml3d/stats/motion_stats_abs", 'std.pt')).float()
 

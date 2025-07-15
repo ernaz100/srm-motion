@@ -53,7 +53,7 @@ class SamplingEvaluationCfg(EvaluationCfg):
     visualize_time: bool = True
     visualize_sigma: bool = True
     visualize_x: bool = True
-
+    fps: int = 20  
 
 T = TypeVar("T", bound=SamplingEvaluationCfg)
 
@@ -105,13 +105,20 @@ class SamplingEvaluation(Evaluation[T, UnbatchedSamplingExample, BatchedSampling
                     device=device
                 )
         
+        # Handle mask expansion for motion data
+        mask = batch.get("mask", None)
+        if mask is not None and 'humanml3d' in self.dataset.cfg.name:
+            # Expand mask to match feature dimensions: [batch, 1, height, width] -> [batch, 1, height, n_features]
+            # This ensures the mask can be properly applied across all features in each frame
+            mask = mask.expand(-1, -1, -1, z_t.shape[-1])  # Expand to n_features
+            
         masked = (1-batch["mask"]) * batch["image"] if "mask" in batch else None
         for key, sampler in self.samplers.items():
             sample = sampler.__call__(
                 model,
                 z_t=z_t,
                 label=batch.get("label", None),
-                mask=batch.get("mask", None),
+                mask=mask,
                 masked=masked,
                 return_intermediate=return_intermediate, 
                 return_time=return_time,
@@ -162,7 +169,6 @@ class SamplingEvaluation(Evaluation[T, UnbatchedSamplingExample, BatchedSampling
         if 'humanml3d' in self.dataset.cfg.name:
             s = slice(num_log)
             motions = sample["sample"][s]
-            # Unnormalize the motion data using mean and std
             motions = motions.cpu().squeeze(1)  # [batch, time, features]
             step = model.step_tracker.get_step()
             for i, (mot, name) in enumerate(zip(motions, names[s])):                
@@ -170,10 +176,13 @@ class SamplingEvaluation(Evaluation[T, UnbatchedSamplingExample, BatchedSampling
                 with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as temp_file:
                     temp_path = temp_file.name
                     text_desc = texts[s][i] if texts else name  # Use text if provided
-
+                # Get mask for this sample if available
+                mot_mask = None
+                if "mask" in sample and sample["mask"] is not None:
+                    mot_mask = sample["mask"][s][i].cpu().squeeze(0).squeeze(-1)  # [time]
                 try:
                     print(f"Creating video for {name} at {temp_path}")
-                    visualize_motion(motion_data=mot, length=len(mot), output_path=temp_path, text_description=text_desc, fps=20, device=model.device)
+                    visualize_motion(motion_data=mot, length=len(mot), output_path=temp_path, text_description=text_desc, fps=20, device=model.device, mask=mot_mask)
                     
                     # Verify the file was created before trying to log it
                     if os.path.exists(temp_path):

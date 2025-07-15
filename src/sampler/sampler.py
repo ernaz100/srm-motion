@@ -109,13 +109,15 @@ class Sampler(Generic[T], ABC):
         eps = None
         if mask is not None:
             if model.cfg.patch_size is None:
-                if model.cfg.conditioning.mask:     # use mask only as conditioning if trained so
-                    c_cat = torch.cat((mask, masked), dim=1)
+                # For motion data, do NOT use inpainting-style conditioning (no c_cat)
+                # Only use c_cat for image inpainting datasets
                 eps = z_t if t is None else model.flow.get_eps(t, x=masked, zt=z_t)
             else:
                 z_t = masked + mask * z_t
                 t = mask if t is None else torch.minimum(mask, t)
-        else:
+        
+        # Ensure t is always a tensor
+        if t is None:
             t = torch.full_like(z_t[:, :1], fill_value=model.cfg.model.time_interval[1])
         return z_t, t, label, c_cat, eps
     

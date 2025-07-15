@@ -4,6 +4,22 @@ This class loads HumanML3D motion data and treats it as a 2D 'image' for the dif
 Sequences are padded to max_length and features are cropped/padded to n_features if necessary.
 Normalization is a simple min-max to [-1, 1] for sanity check purposes.
 In a full implementation, use proper mean-std normalization from the dataset statistics.
+
+MOTION MASK FUNCTIONALITY:
+When conditioning.mask is enabled, this dataset creates a motion mask that indicates which frames
+contain actual motion data vs padding. This is crucial for motion sequences because:
+1. Different sequences have different lengths, so shorter sequences are padded with zeros
+2. The model should only learn from valid motion frames, not from padding
+3. Loss should be zeroed out for padded frames to prevent the model from learning to predict zeros
+
+The mask is a boolean tensor of shape [max_frames] where:
+- True: Frame contains actual motion data
+- False: Frame is padding (zero-filled)
+
+This mask is used in the training pipeline to:
+- Zero out loss for padded frames
+- Apply time sampling only to valid frames
+- Ensure the model focuses on learning real motion patterns
 """
 
 import os
@@ -93,10 +109,15 @@ class DatasetHumanML3D(Dataset[DatasetHumanML3DCfg]):
         res = UnbatchedExample(index=idx)
         image = sample['image']
         res['image'] = image  # [1, max_frames, n_features]
+        
+        # Add motion mask if conditioning is enabled
         if self.conditioning_cfg.mask:
-            # If mask conditioning is needed, add logic here if applicable
-            # For now, assuming no mask for motion data
-            pass
+            # Create mask indicating which frames contain actual motion data (not padding)
+            # Shape: [1, max_frames, n_features] -> [1, max_frames, 1] (broadcast across features)
+            motion_mask = sample['motion_mask']  # [max_frames]
+            # Expand to match image shape: [1, max_frames, 1] (channel, height, width)
+            res['mask'] = motion_mask.unsqueeze(0).unsqueeze(-1).float()
+            
         if 'label' in sample:
             res['label'] = sample['label']
         if 'path' in sample:
@@ -193,11 +214,17 @@ class DatasetHumanML3D(Dataset[DatasetHumanML3DCfg]):
         # Normalize motion data using mean and std
         motion = (motion - self.mean) / (self.std + 1e-6)
         image = motion.unsqueeze(0)  # [1, max_frames, n_features]
+        
+        # Create motion mask: True for frames with actual motion data, False for padding
+        # The mask indicates which frames contain real motion vs zero-padding
+        motion_mask = torch.zeros(self.max_frames, dtype=torch.bool)
+        motion_mask[:length] = True  # First 'length' frames contain actual motion data
+        
         anns = ann['annotations']
         chosen_ann = random.choice(anns)
         text = chosen_ann['text']  # Use the text description as the key
         emb_idx = self.text_index[text]  # Now looks up by text
         text_emb = torch.from_numpy(self.text_embeddings[emb_idx]).float()
         text_emb = (text_emb - self.text_mean) / (self.text_std + 1e-6)
-        sample = {'image': image, 'label': text_emb, 'path': motion_path, 'text': text}
+        sample = {'image': image, 'label': text_emb, 'path': motion_path, 'text': text, 'motion_mask': motion_mask}
         return sample 

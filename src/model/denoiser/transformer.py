@@ -109,6 +109,7 @@ class TransformerDenoiser(Denoiser[TransformerDenoiserCfg]):
         t: Tensor,
         label: Tensor | None = None,
         c_cat: Tensor | None = None,
+        motion_mask: Tensor | None = None,
         sample: bool = False,
         use_ema: bool = True
     ):
@@ -117,6 +118,18 @@ class TransformerDenoiser(Denoiser[TransformerDenoiserCfg]):
         assert d_in == 1, "Assuming single channel for sequences"
         x = x.squeeze(2)  # [batch, time, n_frames, n_features]
         x = x.reshape(batch * num_times, n_frames, n_features)  # [batch*time, seq_len=n_frames, d_features]
+        
+        # Process motion mask for transformer attention
+        src_key_padding_mask = None
+        if motion_mask is not None:
+            # motion_mask: [batch, 1, n_frames, n_features] -> [batch, n_frames]
+            # Take the first feature dimension as the frame mask (all features in a frame have same validity)
+            motion_mask = motion_mask.squeeze(1)[:, :, 0]  # Remove channel dim and take first feature
+            # Expand to match batch*num_times
+            motion_mask = motion_mask.unsqueeze(1).expand(-1, num_times, -1)  # [batch, time, n_frames]
+            motion_mask = motion_mask.reshape(batch * num_times, n_frames)  # [batch*time, n_frames]
+            # Transformer expects src_key_padding_mask: True for PAD tokens, False for valid tokens
+            src_key_padding_mask = ~motion_mask.bool()  # True for padding, False for valid frames
         
         # Process timesteps - take mean over spatial dimensions
         t = t.mean(dim=(3, 4))  # [batch, time, 1] - average over height, width
@@ -146,13 +159,19 @@ class TransformerDenoiser(Denoiser[TransformerDenoiserCfg]):
             text_emb = text_emb.unsqueeze(1).expand(-1, num_times, -1)  # [batch, time, d_model]
             text_emb = text_emb.reshape(batch * num_times, 1, self.d_model)  # [batch*time, 1, d_model]
             x = torch.cat([text_emb, x], dim=1)  # [batch*time, 1 + n_frames, d_model]
+            
+            # Update padding mask to include text token (always valid)
+            if src_key_padding_mask is not None:
+                # Add False for text token (valid) at the beginning
+                text_mask = torch.zeros(batch * num_times, 1, dtype=torch.bool, device=src_key_padding_mask.device)
+                src_key_padding_mask = torch.cat([text_mask, src_key_padding_mask], dim=1)
         
         # Create causal mask for temporal consistency (optional)
         seq_len = x.size(1)
         causal_mask = self._create_causal_mask(seq_len, x.device)
         
-        # Apply transformer with optional causal masking
-        x = self.transformer(x, mask=causal_mask)
+        # Apply transformer with optional causal masking and padding mask
+        x = self.transformer(x, mask=causal_mask, src_key_padding_mask=src_key_padding_mask)
         
         # Remove text prefix if present
         if label is not None and self.text_proj is not None:

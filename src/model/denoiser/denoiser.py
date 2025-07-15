@@ -101,12 +101,15 @@ class Denoiser(Module, ABC, Generic[T]):
         self, 
         x: Float[Tensor, "batch time d_in height width"],
         t: Float[Tensor, "batch time 1 height width"],
-        label: Tensor | None = None
+        label: Tensor | None = None,
+        motion_mask: Float[Tensor, "batch 1 height width"] | None = None
     ) -> Float[Tensor, "batch time d_out height width"]:
         """
         Arguments:
             x: Input samples
             t: Timesteps
+            label: Optional conditioning label
+            motion_mask: Optional mask indicating valid motion frames (1=valid, 0=padding)
         """
         pass
 
@@ -116,8 +119,9 @@ class Denoiser(Module, ABC, Generic[T]):
         x: Float[Tensor, "batch time d_in height width"],
         t: Float[Tensor, "batch time 1 height width"],
         label: Tensor | None = None,
+        motion_mask: Float[Tensor, "batch 1 height width"] | None = None
     ) -> Float[Tensor, "batch time d_out height width"]:
-        return self.forward(x, t, label)
+        return self.forward(x, t, label, motion_mask)
 
     def init_weights(self) -> None:
         if hasattr(self, 'class_embedding') and self.class_embedding is not None:

@@ -191,6 +191,7 @@ class Wrapper(LightningModule):
         t: Float[Tensor, "batch time 1 height width"],
         label: Any | None = None,
         c_cat: Float[Tensor, "batch time d_c height width"] | None = None,
+        motion_mask: Float[Tensor, "batch 1 height width"] | None = None,
         sample: bool = False,
         use_ema: bool = True
     ) -> tuple[
@@ -202,11 +203,11 @@ class Wrapper(LightningModule):
         if sample:
             # NOTE Do not use compile for sampling because of varying batch sizes
             pred = (self.ema_denoiser if self.cfg.model.ema and use_ema else self.denoiser).forward(
-                in_t, t, label
+                in_t, t, label, motion_mask=motion_mask
             )
         else:
             pred = self.denoiser.forward_compiled(
-                in_t, t, label
+                in_t, t, label, motion_mask=motion_mask
             )
         mean_theta = pred[..., :self.d_data, :, :]
         # Convert prediction from denoiser parameterization to model parameterization
@@ -257,18 +258,37 @@ class Wrapper(LightningModule):
         # Sample timestep map and create optional concatenation conditioning for inpainting baseline
         c_cat = None
         t, loss_weight = self.time_sampler(batch_size, self.cfg.train.num_time_samples, device)
+        
+        # Handle motion mask differently from image inpainting mask
+        motion_mask = None
+        if self.cfg.conditioning.mask:
+            motion_mask = batch["mask"]  # [batch, 1, height, width] - indicates valid motion frames
+            # For motion data, mask indicates valid frames (1) vs padding (0)
+            # We'll use this to weight the loss, not for inpainting conditioning
+            # This is different from image inpainting where mask indicates regions to be filled
+            
+            # Expand mask to match feature dimensions: [batch, 1, height, width] -> [batch, 1, height, n_features]
+            # This ensures the mask can be properly applied across all features in each frame
+            motion_mask = motion_mask.expand(-1, -1, -1, x.shape[-1])  # Expand to n_features
                 
         if self.cfg.patch_size is None:
             # t = t.expand_as(x[..., :1, :, :])
-            if self.cfg.conditioning.mask:
-                # Image level time with standard conditioning on masked (and mask)
+            if self.cfg.conditioning.mask and motion_mask is None:
+                # Only use inpainting-style conditioning if we don't have a motion mask
+                # This is for backward compatibility with image datasets
                 c_cat = torch.cat((batch["mask"], x * (1 - batch["mask"])), dim=1)
         else:            
             t = torch.kron(t, self.float_kernel)
             loss_weight = torch.kron(loss_weight, self.float_kernel)
             if self.cfg.conditioning.mask:
-                t.mul_(batch["mask"])
-                loss_weight.mul_(batch["mask"])
+                if motion_mask is not None:
+                    # For motion data: apply mask to time and loss weight
+                    t = t * motion_mask
+                    loss_weight = loss_weight * motion_mask
+                else:
+                    # For image data: apply mask to time and loss weight
+                    t.mul_(batch["mask"])
+                    loss_weight.mul_(batch["mask"])
 
         # Create remaining conditionings by modulation
         label = batch["label"] if self.cfg.conditioning.label else None
@@ -283,7 +303,7 @@ class Wrapper(LightningModule):
         eps = self.flow.sample_eps(x)
         z_t = self.flow.get_zt(t, eps=eps, x=x)
 
-        mean_theta, v_theta, sigma_theta = self.forward(z_t, t, label, c_cat=c_cat)
+        mean_theta, v_theta, sigma_theta = self.forward(z_t, t, label, c_cat=c_cat, motion_mask=motion_mask)
 
         if self.cfg.model.parameterization == "eps":
             target = eps
@@ -293,6 +313,14 @@ class Wrapper(LightningModule):
             raise ValueError(f"Unknown parameterization {self.cfg.model.parameterization}")
 
         loss_unweighted = mse_loss(mean_theta, target, reduction="none")
+        
+        # Apply motion mask to loss if available
+        if motion_mask is not None:
+            # Expand motion mask to match loss shape: [batch, 1, height, width] -> [batch, time, channel, height, width]
+            motion_mask_expanded = motion_mask.unsqueeze(1).expand(batch_size, self.cfg.train.num_time_samples, *motion_mask.shape[-3:])
+            # Zero out loss for padded frames
+            loss_unweighted = loss_unweighted * motion_mask_expanded.float()
+            
         loss_weighted = loss_weight * loss_unweighted
         if self.cfg.train.log_flow_loss_per_time_split:
             self.log_time_split_loss("unweighted/mu", loss_unweighted, t)
@@ -311,6 +339,11 @@ class Wrapper(LightningModule):
             kl = q.kl(p_theta)
             nll = -p_theta.discretized_log_likelihood(x)
             vlb_unweighted = torch.where(nll_mask, nll, kl) / log(2.0)
+            
+            # Apply motion mask to VLB loss if available
+            if motion_mask is not None:
+                vlb_unweighted = vlb_unweighted * motion_mask_expanded.float()
+                
             vlb_weighted = loss_weight * vlb_unweighted
             if self.cfg.train.log_sigma_loss_per_time_split:
                 self.log_time_split_loss("unweighted/vlb", vlb_unweighted, t)
@@ -324,6 +357,11 @@ class Wrapper(LightningModule):
             and step > self.cfg.loss.sigma.apply_after_step:
             pred_theta = DiagonalGaussian(mean_theta.detach(), std=sigma_theta)
             sigma_loss_unweighted = pred_theta.nll(target)
+            
+            # Apply motion mask to sigma loss if available
+            if motion_mask is not None:
+                sigma_loss_unweighted = sigma_loss_unweighted * motion_mask_expanded.float()
+                
             sigma_loss_weighted = loss_weight * sigma_loss_unweighted
             if self.cfg.train.log_sigma_loss_per_time_split:
                 self.log_time_split_loss("unweighted/sigma", sigma_loss_unweighted, t)
@@ -334,10 +372,8 @@ class Wrapper(LightningModule):
             loss = loss + self.cfg.loss.sigma.weight * sigma_loss
 
         self.log(f"loss/total", loss)
-        if self.global_rank == 0 and not DEBUG and step % self.trainer.log_every_n_steps == 0 \
-            and (self.trainer.fit_loop.total_batch_idx + 1) % self.trainer.accumulate_grad_batches == 0:
             # Print progress
-            print(f"train step = {step}; loss = {loss:.6f};")
+        print(f"train step = {step}; loss = {loss:.6f};")
 
         return loss
     
