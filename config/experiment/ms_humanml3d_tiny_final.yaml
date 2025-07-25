@@ -14,7 +14,7 @@ validation:
     num_samples: 1  # Only validate on 1 sample for tiny dataset
 
 wandb:
-  tags: [humanml3d, tiny, no_uncertainty]
+  tags: [humanml3d, tiny, no_uncertainty, improved_transformer]
   project: srm
   entity: ernaz100
   mode: online
@@ -24,10 +24,10 @@ patch_size: null  # Disable patch for sequences
 
 model:
   denoiser:
-    num_layers: 6
-    num_heads: 8
-    d_model: 512
-    dim_feedforward: 2048
+    num_layers: 12  # Increased capacity
+    num_heads: 16   # Better attention
+    d_model: 768    # More capacity
+    dim_feedforward: 3072  # 4x d_model
     dropout: 0.1
   learn_sigma: false
 

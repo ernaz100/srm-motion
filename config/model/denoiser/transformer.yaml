@@ -2,8 +2,8 @@ defaults:
   - denoiser
 
 name: transformer
-num_layers: 6
-num_heads: 8
-d_model: 512
-dim_feedforward: 2048
+num_layers: 12  # Increased from 6 to match UNet depth
+num_heads: 16   # Increased from 8 for better attention
+d_model: 768    # Increased from 512 for more capacity
+dim_feedforward: 3072  # Increased from 2048 (4x d_model)
 dropout: 0.1 
