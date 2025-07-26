@@ -254,7 +254,8 @@ def visualize_motion_smpl_mesh(
         cam_offset=[0.0, 2.2, 0.9],
         ground_color0=[0.8, 0.9, 0.9],
         ground_color1=[0.6, 0.7, 0.7],
-        body_alpha=0.9
+        body_alpha=0.9,
+        text_overlay=text_description  # Add text overlay
     )
     
     # Convert frames to video

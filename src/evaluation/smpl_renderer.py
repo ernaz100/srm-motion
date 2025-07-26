@@ -13,6 +13,8 @@ import torch
 import trimesh
 from tqdm import tqdm
 from smplx.utils import Struct
+from PIL import Image, ImageDraw, ImageFont
+import textwrap
 
 
 # SMPL-H face connections for skeleton visualization
@@ -39,6 +41,66 @@ COLORS = {
     "lightgray": [0.8, 0.8, 0.8],
     "vertex": [0.8, 0.8, 0.8]
 }
+
+
+def add_text_overlay(image_array, text, font_size=24, text_color=(0, 0, 0), bg_color=(255, 255, 255, 180)):
+    """
+    Add text overlay to a rendered image.
+    
+    Args:
+        image_array: numpy array of the image (H, W, 3) in RGB format
+        text: text to overlay
+        font_size: font size for the text
+        text_color: RGB color for the text
+        bg_color: RGBA color for the background rectangle
+    
+    Returns:
+        numpy array with text overlay
+    """
+    if text is None or text.strip() == "":
+        return image_array  # Return original image if no text
+    
+    # Convert numpy array to PIL Image
+    pil_image = Image.fromarray(image_array)
+    
+    # Create a drawing object
+    draw = ImageDraw.Draw(pil_image, 'RGBA')
+    
+    # Try to use a default font, fallback to default if not available
+    try:
+        font = ImageFont.truetype("arial.ttf", font_size)
+    except OSError:
+        try:
+            font = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", font_size)
+        except OSError:
+            try:
+                # Try common Linux font paths
+                font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", font_size)
+            except OSError:
+                font = ImageFont.load_default()
+    
+    # Wrap text to prevent overflow
+    wrapped_text = '\n'.join(textwrap.wrap(text, width=50))
+    
+    # Get text bounding box
+    bbox = draw.textbbox((0, 0), wrapped_text, font=font)
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
+    
+    # Position text in top-left corner with some padding
+    padding = 10
+    x = padding
+    y = padding
+    
+    # Draw background rectangle
+    bg_rect = [x - 5, y - 5, x + text_width + 5, y + text_height + 5]
+    draw.rectangle(bg_rect, fill=bg_color)
+    
+    # Draw text
+    draw.text((x, y), wrapped_text, font=font, fill=text_color)
+    
+    # Convert back to numpy array
+    return np.array(pil_image)
 
 
 def look_at(eye, target, up=[0, 0, 1]):
@@ -74,12 +136,14 @@ class MeshViewer:
         img_extn="png",
         default_cam_offset=[0.0, 4.0, 1.25],
         default_cam_rot=None,
+        text_overlay=None,  # Add text overlay parameter
     ):
         self.pyrender = pyrender
         self.use_offscreen = use_offscreen
         self.follow_camera = follow_camera
         self.img_extn = img_extn
         self.figsize = (width, height)
+        self.text_overlay = text_overlay  # Store text overlay
         
         # Animation settings
         self.animation_len = -1
@@ -297,6 +361,10 @@ class MeshViewer:
             else:
                 color, depth = self.viewer.render(self.scene)
             
+            # Apply text overlay if available
+            if self.text_overlay is not None:
+                color = add_text_overlay(color, self.text_overlay)
+            
             # Save frame
             frame_path = os.path.join(self.render_path, f"frame_{frame_idx:04d}.{self.img_extn}")
             
@@ -354,6 +422,7 @@ def viz_smpl_seq(
     render_bodies_static=None,
     render_points_static=None,
     cam_rot=None,
+    text_overlay=None,  # Add text overlay parameter
 ):
     """
     Visualizes the body model output of an SMPL sequence.
@@ -380,6 +449,7 @@ def viz_smpl_seq(
         ground_color0: Ground color 1
         ground_color1: Ground color 2
         body_alpha: Body alpha value
+        text_overlay: Text to overlay on each frame (optional)
     """
     
     # Convert tensors to numpy if needed
@@ -425,6 +495,7 @@ def viz_smpl_seq(
         img_extn=img_extn,
         default_cam_offset=cam_offset,
         default_cam_rot=cam_rot,
+        text_overlay=text_overlay,  # Pass text overlay to MeshViewer
     )
     
     # Add body mesh sequence
