@@ -216,7 +216,7 @@ def visualize_motion_smpl_mesh(
     )
     vertices = smpl_output["vertices"]  # Shape: [T, 6890, 3]
 
-    assert len(vertices) == 3
+    assert len(vertices.shape) == 3
     # Put vertices at floor level
     ground = vertices[..., 2].min()
     vertices[..., 2] -= ground
