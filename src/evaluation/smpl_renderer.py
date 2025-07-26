@@ -6,6 +6,8 @@ Based on the humor renderer from the STMC project.
 """
 
 import os
+os.environ["PYOPENGL_PLATFORM"] = "egl"
+
 import numpy as np
 import torch
 import trimesh
@@ -381,8 +383,7 @@ def viz_smpl_seq(
     """
     
     # Convert tensors to numpy if needed
-    def c2c(tensor):
-        return tensor.detach().cpu().numpy() if torch.is_tensor(tensor) else tensor
+    c2c = lambda tensor: tensor.detach().to(torch.float32).cpu().numpy() if torch.is_tensor(tensor) else tensor
     
     if contacts is not None and torch.is_tensor(contacts):
         contacts = c2c(contacts)
@@ -485,36 +486,49 @@ class Video:
         self.fps = fps
     
     def save(self, output_path):
-        """Save frames as video using ffmpeg."""
-        import subprocess
-        import glob
-        
-        # Get all frame files
-        frame_pattern = os.path.join(self.frames_dir, f"frame_*.png")
-        frame_files = sorted(glob.glob(frame_pattern))
-        
-        if not frame_files:
-            print(f"No frame files found in {self.frames_dir}")
-            return
-        
-        # Create ffmpeg command
-        cmd = [
-            'ffmpeg',
-            '-y',  # Overwrite output file
-            '-framerate', str(self.fps),
-            '-i', os.path.join(self.frames_dir, 'frame_%04d.png'),
-            '-c:v', 'libx264',
-            '-pix_fmt', 'yuv420p',
-            '-crf', '23',
-            output_path
-        ]
-        
+        """Convert frames to video using ffmpeg."""
         try:
-            subprocess.run(cmd, check=True)
-            print(f"Video saved to {output_path}")
-        except subprocess.CalledProcessError as e:
+            # Try libopenh264 first (usually available)
+            cmd = [
+                'ffmpeg', '-y', '-framerate', str(self.fps),
+                '-i', os.path.join(self.frames_dir, 'frame_%04d.png'),
+                '-c:v', 'libopenh264', '-pix_fmt', 'yuv420p',
+                output_path
+            ]
+            import subprocess
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            
+            if result.returncode != 0:
+                print(f"libopenh264 failed, trying mpeg4...")
+                # Fallback to mpeg4
+                cmd = [
+                    'ffmpeg', '-y', '-framerate', str(self.fps),
+                    '-i', os.path.join(self.frames_dir, 'frame_%04d.png'),
+                    '-c:v', 'mpeg4', '-pix_fmt', 'yuv420p',
+                    output_path
+                ]
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                
+                if result.returncode != 0:
+                    print(f"mpeg4 also failed, trying raw video...")
+                    # Last resort: raw video
+                    cmd = [
+                        'ffmpeg', '-y', '-framerate', str(self.fps),
+                        '-i', os.path.join(self.frames_dir, 'frame_%04d.png'),
+                        '-c:v', 'rawvideo', '-pix_fmt', 'rgb24',
+                        output_path.replace('.mp4', '.avi')
+                    ]
+                    result = subprocess.run(cmd, capture_output=True, text=True)
+                    
+                    if result.returncode != 0:
+                        print(f"All video encoders failed. Frames saved in: {self.frames_dir}")
+                        print(f"FFmpeg error: {result.stderr}")
+                        return False
+            
+            print(f"Video saved successfully to: {output_path}")
+            return True
+            
+        except Exception as e:
             print(f"Error creating video: {e}")
-            print("FFmpeg failed. Frames are saved in the output directory.")
-        except FileNotFoundError:
-            print("ffmpeg not found. Please install ffmpeg to create videos.")
-            print("Frames are saved in the output directory.") 
+            print(f"Frames are available in: {self.frames_dir}")
+            return False 
