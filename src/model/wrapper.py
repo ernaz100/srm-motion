@@ -130,6 +130,7 @@ class Wrapper(LightningModule):
         self.step_tracker = StepTracker(cfg.train.step_offset)
             
         self.d_data = d_data
+        self.image_shape = image_shape
         d_in = self.d_data
         if self.cfg.patch_size is None and self.cfg.conditioning.mask:
             d_in += self.d_data + 1
@@ -157,7 +158,7 @@ class Wrapper(LightningModule):
             self.ema_denoiser = None
 
         self.flow = get_flow(cfg.model.flow, cfg.model.parameterization)
-        self.patch_grid_size = (1, 1) if self.cfg.patch_size is None else tuple(s // self.cfg.patch_size for s in image_shape)
+        self.patch_grid_size = (image_shape[0], 1) if self.cfg.patch_size is None else tuple(s // self.cfg.patch_size for s in image_shape)
         self.time_sampler = get_time_sampler(cfg.model.time_sampler, resolution=self.patch_grid_size)
         
         if self.cfg.patch_size is not None:
@@ -259,7 +260,9 @@ class Wrapper(LightningModule):
         t, loss_weight = self.time_sampler(batch_size, self.cfg.train.num_time_samples, device)
                 
         if self.cfg.patch_size is None:
-            # t = t.expand_as(x[..., :1, :, :])
+            # Expand to full width (features)
+            t = t.repeat_interleave(self.image_shape[1], dim=-1)
+            loss_weight = loss_weight.repeat_interleave(self.image_shape[1], dim=-1)
             if self.cfg.conditioning.mask:
                 # Image level time with standard conditioning on masked (and mask)
                 c_cat = torch.cat((batch["mask"], x * (1 - batch["mask"])), dim=1)

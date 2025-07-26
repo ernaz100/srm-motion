@@ -88,11 +88,9 @@ class TransformerDenoiser(Denoiser[TransformerDenoiserCfg]):
         x = x.squeeze(2)  # [batch, time, n_frames, n_features]
         x = x.reshape(batch * num_times, n_frames, n_features)  # [batch*time, seq_len=n_frames, d_features]
         
-        # t: Average over spatial dimensions (height, width) first, then reshape to per-sample
-        t = t.mean(dim=(3, 4))  # [batch, time, 1] - average over height=81, width=205
-        t = t.reshape(batch * num_times, 1)  # [batch*time, 1]
-        t = t.expand(-1, n_frames)  # Broadcast to [batch*time, n_frames]
-        t = t.unsqueeze(-1)  # [batch*time, n_frames, 1]
+        # t: Average over feature dimension only (dim=4, width=n_features) to get per-frame t
+        t = t.mean(dim=4, keepdim=True)  # [batch, num_times, 1, n_frames, 1] - average over features
+        t = t.reshape(batch * num_times, n_frames, 1)  # [batch*time, n_frames, 1]
         t_emb = self.time_emb(t).squeeze(2)  # [batch*time, n_frames, d_model]
         
         # Project x and add t_emb + pos_enc

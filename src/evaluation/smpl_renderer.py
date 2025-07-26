@@ -176,9 +176,9 @@ class MeshViewer:
         
         # Camera pose - identity rotation, only translation
         camera_pose = look_at([0, 4, 1.25], [0, 0, 1])
-        print("Camera pose:\n", camera_pose)
-        print("Determinant:", np.linalg.det(camera_pose[:3, :3]))
-        print("Is finite:", np.isfinite(camera_pose).all())
+        #print("Camera pose:\n", camera_pose)
+        #print("Determinant:", np.linalg.det(camera_pose[:3, :3]))
+        #print("Is finite:", np.isfinite(camera_pose).all())
         
         self.camera_node = self.scene.add(camera, pose=camera_pose)
         
@@ -250,7 +250,6 @@ class MeshViewer:
                     roughnessFactor=0.7
                 )
                 pyrender_mesh = self.pyrender.Mesh.from_trimesh(mesh.copy(), material=material)
-                print(f"Created mesh {i}: vertices={mesh.vertices.shape}, faces={mesh.faces.shape}")
                 pyrender_mesh_seq.append(pyrender_mesh)
             else:
                 pyrender_mesh_seq.append(mesh)
@@ -344,7 +343,6 @@ class MeshViewer:
         else:
             frame_iter = range(start, end)
             
-        print(f"Rendering {len(frame_iter)} frames...")
         
         # Initialize animation frame index
         self.animation_frame_idx = 0
@@ -470,9 +468,9 @@ def viz_smpl_seq(
         body_mesh_seq = []
         for i in range(body.v.size(0)):
             vertices = c2c(body.v[i])
-            print(f"Frame {i}: vertices range X[{vertices[:, 0].min():.2f}, {vertices[:, 0].max():.2f}], "
-                  f"Y[{vertices[:, 1].min():.2f}, {vertices[:, 1].max():.2f}], "
-                  f"Z[{vertices[:, 2].min():.2f}, {vertices[:, 2].max():.2f}]")
+            #print(f"Frame {i}: vertices range X[{vertices[:, 0].min():.2f}, {vertices[:, 0].max():.2f}], "
+            #      f"Y[{vertices[:, 1].min():.2f}, {vertices[:, 1].max():.2f}], "
+            #      f"Z[{vertices[:, 2].min():.2f}, {vertices[:, 2].max():.2f}]")
             
             mesh = trimesh.Trimesh(
                 vertices=vertices,

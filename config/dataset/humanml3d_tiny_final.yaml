@@ -5,7 +5,7 @@ stats_dir: datasets/humanml3d/stats/motion_stats_abs
 text_emb_dir: datasets/humanml3d/annotations/humanml3d/text_embeddings/ViT-B/32.npy
 text_index_path: datasets/humanml3d/annotations/humanml3d/text_embeddings/ViT-B/32_index.json
 text_stats_dir: datasets/humanml3d/stats/text_stats_abs
-image_shape: [81, 205]  # Updated to match max_length
+image_shape: [21, 205]  # Updated to match max_length
 subset_size: 1  # Tiny subset for sanity check
 test_samples_num: 0  # No separate test split
 augment: false
