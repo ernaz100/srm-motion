@@ -30,6 +30,8 @@ model:
     dim_feedforward: 2048
     dropout: 0.1
   learn_sigma: false
+  flow:
+    variance: "fixed_small"
 
 time_interval: [0.0, 1.0]
 
@@ -52,8 +54,8 @@ data_loader:
     persistent_workers: false
 
 trainer:
-  max_steps: 25000  # Reduced for sanity check
-  val_check_interval: 1000  # More frequent validation
+  max_steps: 100000  # Reduced for sanity check
+  val_check_interval: 5000  # More frequent validation
   log_every_n_steps: 1    # More frequent logging 
 
 optimizer:
