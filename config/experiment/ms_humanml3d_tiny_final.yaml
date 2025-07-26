@@ -32,6 +32,8 @@ model:
   learn_sigma: false
   flow:
     variance: "fixed_small"
+  time_sampler:
+    add_zeros: true
 
 time_interval: [0.0, 1.0]
 
