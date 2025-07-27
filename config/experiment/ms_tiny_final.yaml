@@ -25,6 +25,8 @@ patch_size: 28  # 252/28 = 9x9 = 81 patches instead of 252x252 = 63,504 patches
 # Disable uncertainty estimation
 model:
   learn_sigma: false  # Disable uncertainty estimation
+  flow:
+    variance: "learned_range"
 
 loss:
   sigma:

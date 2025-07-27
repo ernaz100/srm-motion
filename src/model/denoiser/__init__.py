@@ -20,10 +20,13 @@ def get_denoiser(
     d_out: int,
     image_shape: Sequence[int],
     num_classes: int | None = None,
-    conditioning_cfg: ConditioningCfg = None
+    conditioning_cfg: ConditioningCfg = None,
+    learn_variance: bool = False,
+    learn_sigma: bool = False
 ) -> Denoiser:
     denoiser: Denoiser = DENOISERS[denoiser_cfg.name](
-        denoiser_cfg, d_in, d_out, image_shape, num_classes, conditioning_cfg=conditioning_cfg
+        denoiser_cfg, d_in, d_out, image_shape, num_classes, conditioning_cfg=conditioning_cfg,
+        learn_variance=learn_variance, learn_sigma=learn_sigma
     )
     denoiser.init_weights()
     denoiser.freeze()

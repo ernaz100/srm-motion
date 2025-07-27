@@ -143,10 +143,11 @@ class Wrapper(LightningModule):
             cfg.model.denoiser, 
             d_in, 
             d_out,
-
             image_shape,
             num_classes,
-            conditioning_cfg=cfg.conditioning
+            conditioning_cfg=cfg.conditioning,
+            learn_variance=(cfg.model.flow.variance == "learned_range"),
+            learn_sigma=cfg.model.learn_sigma
         )
         if self.cfg.model.ema:
             self.ema_denoiser = AveragedModel(
@@ -216,7 +217,7 @@ class Wrapper(LightningModule):
         )
 
         if self.cfg.model.flow.variance == "learned_range":
-            v_theta = (pred[..., self.d_data:2*self.d_data, :, :] + 1) / 2
+            v_theta = pred[..., self.d_data:2*self.d_data, :, :]
         else:
             v_theta = None
 

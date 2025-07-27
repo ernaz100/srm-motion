@@ -33,14 +33,21 @@ class TransformerDenoiser(Denoiser[TransformerDenoiserCfg]):
         d_out: int,
         image_shape: Sequence[int],
         num_classes: int | None = None,
-        conditioning_cfg: ConditioningCfg = None
+        conditioning_cfg: ConditioningCfg = None,
+        learn_variance: bool = False,
+        learn_sigma: bool = False
     ) -> None:
         super().__init__(cfg, d_in, d_out, image_shape, num_classes, conditioning_cfg)
         self.n_frames = image_shape[0]  # height = n_frames (time)
         self.d_features = image_shape[1]  # width = n_features per frame
         self.d_model = cfg.d_model
+        self.d_data = d_in  # Use d_in as d_data assuming single channel input
         self.input_proj = nn.Linear(self.d_features, self.d_model)  # Project features per frame
-        self.output_proj = nn.Linear(self.d_model, d_out * self.d_features)  # Project back to d_out per feature
+        self.mean_proj = nn.Linear(self.d_model, self.d_data * self.d_features)  # Project to mean
+        if learn_variance:
+            self.variance_proj = nn.Linear(self.d_model, self.d_data * self.d_features)
+        if learn_sigma:
+            self.sigma_proj = nn.Linear(self.d_model, 1 * self.d_features)  # 1 channel for logvar
         self.transformer = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(
                 d_model=self.d_model,
@@ -106,9 +113,17 @@ class TransformerDenoiser(Denoiser[TransformerDenoiserCfg]):
         # Transformer forward
         x = self.transformer(x)
         
-        # Remove prefix, project back
+        # Remove prefix
         if label is not None:
             x = x[:, 1:]
-        x = self.output_proj(x)  # [batch*time, n_frames, d_out * n_features]
-        x = x.view(batch * num_times, n_frames, self.d_out, n_features)
-        return x.view(batch, num_times, self.d_out, n_frames, n_features) 
+        
+        # Projections
+        predictions = [self.mean_proj(x)]
+        if hasattr(self, 'variance_proj'):
+            predictions.append(torch.sigmoid(self.variance_proj(x)))
+        if hasattr(self, 'sigma_proj'):
+            predictions.append(self.sigma_proj(x))
+        pred = torch.cat(predictions, dim=-1)  # [batch*time, n_frames, d_out * n_features]
+        
+        pred = pred.view(batch * num_times, n_frames, self.d_out, n_features)
+        return pred.view(batch, num_times, self.d_out, n_frames, n_features) 
