@@ -20,7 +20,7 @@ wandb:
   mode: online
   activated: true
 
-patch_size: null  # Disable patch for sequences
+patch_size: 205  # all features with same noise level
 
 model:
   denoiser:
@@ -31,7 +31,7 @@ model:
     dropout: 0.1
   learn_sigma: false
   flow:
-    variance: "fixed_small"
+    variance: "learned_range"
   time_sampler:
     add_zeros: true
 

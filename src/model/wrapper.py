@@ -159,13 +159,13 @@ class Wrapper(LightningModule):
             self.ema_denoiser = None
 
         self.flow = get_flow(cfg.model.flow, cfg.model.parameterization)
-        self.patch_grid_size = (image_shape[0], 1) if self.cfg.patch_size is None else tuple(s // self.cfg.patch_size for s in image_shape)
+        self.patch_grid_size = (image_shape[0], image_shape[1] // self.cfg.patch_size) if self.cfg.patch_size is not None else (image_shape[0], 1)
         self.time_sampler = get_time_sampler(cfg.model.time_sampler, resolution=self.patch_grid_size)
         
         if self.cfg.patch_size is not None:
             # auxiliary kernels for upsampling
-            self.register_buffer("float_kernel", torch.ones(2 * (self.cfg.patch_size,)), persistent=False)
-            self.register_buffer("bool_kernel", torch.ones(2 * (self.cfg.patch_size,), dtype=torch.bool), persistent=False)
+            self.register_buffer("float_kernel", torch.ones(self.cfg.patch_size), persistent=False)
+            self.register_buffer("bool_kernel", torch.ones(self.cfg.patch_size, dtype=torch.bool), persistent=False)
 
     def log_time_split_loss(
         self,
@@ -233,7 +233,8 @@ class Wrapper(LightningModule):
                     logvar_theta: Tensor = interpolate(
                         avg_pool2d(
                             logvar_theta, 
-                            kernel_size=self.cfg.patch_size, 
+                            kernel_size=(1, self.cfg.patch_size), 
+                            stride=(1, self.cfg.patch_size),
                             count_include_pad=False
                         ),
                         size=shape[-2:],
@@ -268,8 +269,8 @@ class Wrapper(LightningModule):
                 # Image level time with standard conditioning on masked (and mask)
                 c_cat = torch.cat((batch["mask"], x * (1 - batch["mask"])), dim=1)
         else:            
-            t = torch.kron(t, self.float_kernel)
-            loss_weight = torch.kron(loss_weight, self.float_kernel)
+            t = t.repeat_interleave(self.cfg.patch_size, dim=-1)
+            loss_weight = loss_weight.repeat_interleave(self.cfg.patch_size, dim=-1)
             if self.cfg.conditioning.mask:
                 t.mul_(batch["mask"])
                 loss_weight.mul_(batch["mask"])
