@@ -40,7 +40,8 @@ time_interval: [0.0, 1.0]
 loss:
   sigma:
     weight: 0.0  # Set sigma loss weight to 0
-
+  vlb:
+    weight: 0.5
 data_loader:
   train:
     batch_size: 1  # Reduced for tiny dataset and memory

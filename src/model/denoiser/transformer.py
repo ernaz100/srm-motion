@@ -56,10 +56,22 @@ class TransformerDenoiser(Denoiser[TransformerDenoiserCfg]):
                 dropout=cfg.dropout,
                 batch_first=True,
             ),
-            num_layers=cfg.num_layers,
+            num_layers=cfg.num_layers // 2,
+        )
+        self.pool = nn.AvgPool1d(kernel_size=2, stride=2)  # Simple temporal pooling
+        self.unpool = nn.Upsample(scale_factor=2, mode='nearest')  # Upsample back
+        self.decoder = nn.TransformerDecoder(
+            nn.TransformerDecoderLayer(
+                d_model=self.d_model,
+                nhead=cfg.num_heads,
+                dim_feedforward=cfg.dim_feedforward,
+                dropout=cfg.dropout,
+                batch_first=True,
+            ),
+            num_layers=cfg.num_layers // 2,
         )
         # Time embedding (per frame)
-        self.time_emb = nn.Linear(1, self.d_model)  # Simple projection for t
+        self.time_embedding = get_embedding(cfg.time_embedding, self.d_model)  # Use sinusoidal from config
         # Positional encodings
         self.register_buffer('pos_enc', self._get_positional_encodings(self.n_frames, self.d_model))
         # Text projection (for conditioning as prefix)
@@ -98,7 +110,7 @@ class TransformerDenoiser(Denoiser[TransformerDenoiserCfg]):
         # t: Average over feature dimension only (dim=4, width=n_features) to get per-frame t
         t = t.mean(dim=4, keepdim=True)  # [batch, num_times, 1, n_frames, 1] - average over features
         t = t.reshape(batch * num_times, n_frames, 1)  # [batch*time, n_frames, 1]
-        t_emb = self.time_emb(t).squeeze(2)  # [batch*time, n_frames, d_model]
+        t_emb = self.time_embedding.forward(t).squeeze(2)  # [batch*time, n_frames, d_model]
         
         # Project x and add t_emb + pos_enc
         x = self.input_proj(x) + t_emb + self.pos_enc[:, :n_frames]
@@ -112,6 +124,9 @@ class TransformerDenoiser(Denoiser[TransformerDenoiserCfg]):
         
         # Transformer forward
         x = self.transformer(x)
+        x = self.pool(x.permute(0, 2, 1)).permute(0, 2, 1)  # Pool sequence dim
+        x = self.decoder(x, x)  # Self-decode
+        x = self.unpool(x.permute(0, 2, 1)).permute(0, 2, 1)  # Unpool
         
         # Remove prefix
         if label is not None:
