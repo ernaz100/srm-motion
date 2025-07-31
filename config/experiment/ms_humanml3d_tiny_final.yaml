@@ -31,7 +31,7 @@ model:
     dropout: 0.1
   learn_sigma: false
   flow:
-    variance: "fixed_small"
+    variance: "learned_range"
   time_sampler:
     add_zeros: true
 
@@ -40,6 +40,8 @@ time_interval: [0.0, 1.0]
 loss:
   sigma:
     weight: 0.0  # Set sigma loss weight to 0
+  vlb:
+    apply_after_step: 50000 
 
 data_loader:
   train:
