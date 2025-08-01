@@ -41,6 +41,8 @@ class TransformerDenoiser(Denoiser[TransformerDenoiserCfg]):
         self.n_frames = image_shape[0]  # height = n_frames (time)
         self.d_features = image_shape[1]  # width = n_features per frame
         self.d_out = d_out
+        self.learn_variance = learn_variance
+        self.learn_sigma = learn_sigma
         self.d_model = cfg.d_model
         self.d_data = d_in  # Use d_in as d_data assuming single channel input
         self.input_proj = nn.Linear(self.d_features, self.d_model)  # Project features per frame
@@ -120,9 +122,9 @@ class TransformerDenoiser(Denoiser[TransformerDenoiserCfg]):
         
         # Projections
         predictions = [self.mean_proj(x)]
-        if self.d_out == 2:
+        if self.learn_variance:
             predictions.append(torch.sigmoid(self.variance_proj(x)))
-        if self.d_out == 3:
+        if self.learn_sigma:
             predictions.append(self.sigma_proj(x))
         pred = torch.cat(predictions, dim=-1)  # [batch*time, n_frames, d_out * n_features]
         
