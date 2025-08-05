@@ -61,13 +61,18 @@ class TransformerDenoiser(Denoiser[TransformerDenoiserCfg]):
             ),
             num_layers=cfg.num_layers,
         )
-        # Time embedding (per frame)
-        self.time_emb = nn.Linear(1, self.d_model)  # Simple projection for t
-        # Positional encodings
-        self.register_buffer('pos_enc', self._get_positional_encodings(self.n_frames, self.d_model))
+         # Time embedding using the same approach as UNet
+        self.time_embedding = get_embedding(cfg.time_embedding, self.d_model)
+        # Positional encodings +1 for label token
+        self.register_buffer('pos_enc', self._get_positional_encodings(self.n_frames + 1, self.d_model)) #TODO: ?
         # Text projection (for conditioning as prefix)
         if conditioning_cfg and conditioning_cfg.label and num_classes is None:
-            self.text_proj = nn.Linear(512, self.d_model)  # Project text emb to d_model
+            self.text_proj = nn.Sequential(
+            nn.Linear(512, 2 * self.d_model),
+            nn.GELU(),
+            nn.Linear(2 * self.d_model, self.d_model),
+            nn.LayerNorm(self.d_model),
+        )
         else:
             self.text_proj = None
 
@@ -101,17 +106,23 @@ class TransformerDenoiser(Denoiser[TransformerDenoiserCfg]):
         # t: Average over feature dimension only (dim=4, width=n_features) to get per-frame t
         t = t.mean(dim=4, keepdim=True)  # [batch, num_times, 1, n_frames, 1] - average over features
         t = t.reshape(batch * num_times, n_frames, 1)  # [batch*time, n_frames, 1]
-        t_emb = self.time_emb(t).squeeze(2)  # [batch*time, n_frames, d_model]
         
-        # Project x and add t_emb + pos_enc
-        x = self.input_proj(x) + t_emb + self.pos_enc[:, :n_frames]
+        # Use the same time embedding as UNet
+        t_emb = self.time_embedding(t.squeeze(-1))  # [batch*time, n_frames, d_model]
         
-        # Text as prefix (repeat for time if needed)
+        # Project x and add t_emb TODO: ?
+        x = self.input_proj(x) + t_emb  # [batch*time, n_frames, d_model]
+        
+        # Text_embedding as prefix token
         if label is not None and self.text_proj is not None:
-            text_token = label.unsqueeze(1)  # [batch, 1, d_model]
+            text_token = self.text_proj(label)  # [batch, 1, d_model]
+            text_token = text_token.unsqueeze(1)  # [batch, 1, d_model]
             text_token = text_token.unsqueeze(1).expand(-1, num_times, -1, -1)  # [batch, time, 1, d_model]
             text_token = text_token.reshape(batch * num_times, 1, self.d_model)
             x = torch.cat([text_token, x], dim=1)  # [batch*time, 1 + n_frames, d_model]
+            x = x + self.pos_enc[:, :n_frames + 1]
+        else:
+            x = x + self.pos_enc[:, :n_frames]
         
         # Transformer forward
         x = self.transformer(x)
@@ -123,7 +134,7 @@ class TransformerDenoiser(Denoiser[TransformerDenoiserCfg]):
         # Projections
         predictions = [self.mean_proj(x)]
         if self.learn_variance:
-            predictions.append(torch.sigmoid(self.variance_proj(x)))
+            predictions.append(torch.sigmoid(self.variance_proj(x))) # TODO: check what they did to normalize
         if self.learn_sigma:
             predictions.append(self.sigma_proj(x))
         pred = torch.cat(predictions, dim=-1)  # [batch*time, n_frames, d_out * n_features]

@@ -106,6 +106,7 @@ class WrapperCfg:
     optimizer: OptimizerCfg
     # int: varying noise levels / None: image level baseline
     patch_size: int | None
+    uniform_t: bool | None
     train: TrainCfg
     # test: TestCfg
 
@@ -259,7 +260,12 @@ class Wrapper(LightningModule):
         # Sample timestep map and create optional concatenation conditioning for inpainting baseline
         c_cat = None
         t, loss_weight = self.time_sampler(batch_size, self.cfg.train.num_time_samples, device)
-                
+        if self.cfg.uniform_t is not None:
+            #EXP: Sample a single uniform random number in [0, 1) and expand to shape [1, 1, 21, 1]
+            t = torch.rand(1, 1, 1, 1, device=device)  
+            t = t.expand(1, 1, 21, 1)
+            loss_weight = torch.ones(1, 1, 21, 1, device=device)
+            ## END EXP
         if self.cfg.patch_size is None:
             # Expand to full width (features)
             t = t.repeat_interleave(self.image_shape[1], dim=-1)
@@ -313,7 +319,7 @@ class Wrapper(LightningModule):
             p_theta = self.flow.conditional_p(mean_theta.detach(), z_t, t, t_next, alpha=1, v_theta=v_theta)
             q = self.flow.conditional_q(x, eps, t, t_next, alpha=1)
             kl = q.kl(p_theta)
-            nll = -p_theta.discretized_log_likelihood(x)
+            nll = p_theta.nll(x)
             vlb_unweighted = torch.where(nll_mask, nll, kl) / log(2.0)
             vlb_weighted = loss_weight * vlb_unweighted
             if self.cfg.train.log_sigma_loss_per_time_split:

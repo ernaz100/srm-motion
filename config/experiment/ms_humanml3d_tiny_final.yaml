@@ -4,6 +4,9 @@ defaults:
   - override /dataset: humanml3d_tiny_final
   - override /model/denoiser: transformer  # Change to transformer
 
+# Add fixed seed for reproducible debugging
+seed: 42
+
 conditioning:
   mask: false
   label: true
@@ -21,6 +24,7 @@ wandb:
   activated: true
 
 patch_size: null  # Disable patch for sequences
+uniform_t: null
 
 model:
   denoiser:
@@ -33,7 +37,8 @@ model:
   flow:
     variance: "learned_range"
   time_sampler:
-    add_zeros: true
+    add_zeros: false
+  ema: false  
 
 time_interval: [0.0, 1.0]
 
@@ -58,7 +63,7 @@ data_loader:
     persistent_workers: false
 
 trainer:
-  max_steps: 100000  # Reduced for sanity check
+  max_steps: 100000
   val_check_interval: 5000  # More frequent validation
   log_every_n_steps: 1    # More frequent logging 
 
