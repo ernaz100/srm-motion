@@ -122,8 +122,8 @@ class Flow(Module, ABC, Generic[T]):
             v_theta = v_theta[mask]
             # this can change the dtype in AMP
             nnz_sigma = torch.exp(
-                v_theta * torch.log(sigma_large[mask]) \
-                + (1 - v_theta) * torch.log(sigma_small[mask])
+                v_theta * torch.clamp(torch.log(sigma_large[mask]), min=-10.0) \
+                + (1 - v_theta) * torch.clamp(torch.log(sigma_small[mask]), min=-10.0)
             )
             sigma = torch.zeros(mask.shape, dtype=nnz_sigma.dtype, device=nnz_sigma.device)
             sigma[mask] = nnz_sigma
