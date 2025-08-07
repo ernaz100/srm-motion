@@ -76,7 +76,7 @@ class PerLossCfg:
 
 @dataclass
 class VLBLossCfg(PerLossCfg):
-    time_step_size: float = 1.e-3
+    time_step_size: float = 1.e-2
     
 
 @dataclass
