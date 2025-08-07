@@ -77,7 +77,7 @@ trainer:
   log_every_n_steps: 50
   task_steps: null
   accumulate_grad_batches: 1
-  precision: bf16-mixed
+  precision: 32-true
   num_nodes: 1
   validate: true
   profile: false

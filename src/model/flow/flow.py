@@ -127,6 +127,8 @@ class Flow(Module, ABC, Generic[T]):
             )
             sigma = torch.zeros(mask.shape, dtype=nnz_sigma.dtype, device=nnz_sigma.device)
             sigma[mask] = nnz_sigma
+            # Clamp sigma to prevent vanishing variance that causes VLB loss spikes
+            sigma = torch.clamp(sigma, min=1e-5)
             return sigma
 
     def gamma(
