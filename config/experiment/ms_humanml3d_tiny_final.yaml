@@ -24,7 +24,7 @@ wandb:
   activated: true
 
 patch_size: null  # Disable patch for sequences
-uniform_t: null
+uniform_t: true
 
 model:
   denoiser:
@@ -46,7 +46,7 @@ loss:
   sigma:
     weight: 0.0  # Set sigma loss weight to 0
   vlb:
-    apply_after_step: 50000 
+    apply_after_step: 0 
 
 data_loader:
   train:
@@ -63,7 +63,7 @@ data_loader:
     persistent_workers: false
 
 trainer:
-  max_steps: 100000
+  max_steps: 200000
   val_check_interval: 5000  # More frequent validation
   log_every_n_steps: 1    # More frequent logging 
 

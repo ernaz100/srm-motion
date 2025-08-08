@@ -76,7 +76,7 @@ class PerLossCfg:
 
 @dataclass
 class VLBLossCfg(PerLossCfg):
-    time_step_size: float = 1.e-2
+    time_step_size: float = 1.e-5
     
 
 @dataclass
@@ -183,10 +183,21 @@ class Wrapper(LightningModule):
                 (self.cfg.train.num_time_logging_splits,), 
                 fill_value=torch.nan, dtype=loss_log.dtype, device=loss_log.device)
             t_split_loss.scatter_reduce_(0, t_split_idx, loss_log, reduce="mean", include_self=False)
+            
+            # Determine precision based on number of splits
+            if self.cfg.train.num_time_logging_splits >= 100:
+                precision = 2  # 0.01-0.02 format for 100+ splits
+            elif self.cfg.train.num_time_logging_splits >= 10:
+                precision = 1  # 0.1-0.2 format for 10+ splits
+            else:
+                precision = 0  # 0-1 format for <10 splits
+            
+            format_str = f"{{:.{precision}f}}"
             for i in range(self.cfg.train.num_time_logging_splits):
                 if not torch.isnan(t_split_loss[i]):
                     start = i * interval_size
-                    self.log(f"loss/{key}_{start:.1f}-{start+interval_size:.1f}", t_split_loss[i])
+                    end = start + interval_size
+                    self.log(f"loss/{key}_{format_str.format(start)}-{format_str.format(end)}", t_split_loss[i])
 
     def forward(
         self,
@@ -344,6 +355,7 @@ class Wrapper(LightningModule):
             loss = loss + self.cfg.loss.sigma.weight * sigma_loss
 
         self.log(f"loss/total", loss)
+        self.log("t/mean", t.detach().mean())
         if self.global_rank == 0 and not DEBUG and step % self.trainer.log_every_n_steps == 0 \
             and (self.trainer.fit_loop.total_batch_idx + 1) % self.trainer.accumulate_grad_batches == 0:
             # Print progress
